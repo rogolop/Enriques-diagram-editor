@@ -825,13 +825,6 @@ class mySVG {
 				this.startSelectionInRectangle();
 				this.stopCurveEdit();
 				
-			} else if (this.targetElement && this.targetElement.type == ObjectTypes.Curve) {
-				this.startCurveEdit(this.targetId);
-			} else if (this.targetElement && unconstrainedPointTypes.includes(this.targetElement.type)) {
-			// (this.targetElement && this.targetElement.type == ObjectTypes.LastFreePoint) {
-				this.startTangentEdit(this.targetId);
-			// } else if (this.targetElement && this.targetElement.type == ObjectTypes.BasePoint) {
-			// 	this.stopCurveEdit();
 			} else if (this.targetId == this.controlPoint1.id) {
 				// this.selectElement(this.targetId);
 				this.editingControl1 = true;
@@ -840,20 +833,29 @@ class mySVG {
 				// this.selectElement(this.targetId);
 				this.editingControl1 = false;
 				this.editingControl2 = true;
+			
+			} else if (this.targetElement) {
+				if (this.targetElement.type == ObjectTypes.Curve) {
+					this.unselectAll();
+					this.startCurveEdit(this.targetId);
+					
+				} else if (movablePointTypes.includes(this.targetElement.type)) {
+					if (this.selected.length <= 1 || !this.selected.includes(this.targetId)) {
+						this.unselectAll();
+						this.selectElement(this.targetId);
+						if (infinitelyClosePointTypes.includes(this.targetElement.type)) {
+							this.startTangentEdit(this.targetId);
+						} else {
+							this.stopCurveEdit();
+						}
+					} else {
+						this.stopCurveEdit();
+					}
+				} else {
+					this.stopCurveEdit();
+				}
 			} else {
 				this.stopCurveEdit();
-			}
-			
-			if (this.targetElement && movablePointTypes.includes(this.targetElement.type)) {
-				if (this.selected.length <= 1 || !this.selected.includes(this.targetId)) {
-					this.unselectAll();
-					this.selectElement(this.targetId);
-				}
-			
-			} else if (this.editingControl1 || this.editingControl2) {
-				
-			} else {
-				this.unselectAll();
 			}
 			
 		} else if (this.mouseButtons & MouseButton.Right) {
@@ -884,13 +886,25 @@ class mySVG {
 				this.moveSelectedBy(this.dx, this.dy);
 				
 				if (this.selected.length == 1) {
-				// // (this.targetElement && (this.targetElement.type == ObjectTypes.Curve || unconstrainedPointTypes.includes(this.targetElement.type))) {
-					this.controlPoint1.moveBy(this.dx, this.dy);
-					this.controlPoint1Line.position1 = this.elements[this.selected[0]].position;
-					this.controlPoint1Line.position2 = this.controlPoint1.position;
-					this.controlPoint2.moveBy(this.dx, this.dy);
-					this.controlPoint2Line.position1 = this.elements[this.selected[0]].position;
-					this.controlPoint2Line.position2 = this.controlPoint2.position;
+					let selectElement = this.elements[this.selected[0]];
+					if (selectElement.type == ObjectTypes.LastSatellitePoint) {
+						let tangent = normalized(this.elements[selectElement.curve].getTangentAt(1));
+						let v = this.projectDirOnTangent(tangent, this.dx, this.dy);
+						this.controlPoint1.moveBy(v.x, v.y);
+						this.controlPoint1Line.position1 = selectElement.position;
+						this.controlPoint1Line.position2 = this.controlPoint1.position;
+						// this.controlPoint2.moveBy(v.x, v.y);
+						// this.controlPoint2Line.position1 = this.elements[this.selected[0]].position;
+						// this.controlPoint2Line.position2 = this.controlPoint2.position;
+						
+					} else {
+						this.controlPoint1.moveBy(this.dx, this.dy);
+						this.controlPoint1Line.position1 = selectElement.position;
+						this.controlPoint1Line.position2 = this.controlPoint1.position;
+						this.controlPoint2.moveBy(this.dx, this.dy);
+						this.controlPoint2Line.position1 = selectElement.position;
+						this.controlPoint2Line.position2 = this.controlPoint2.position;
+					}
 				}
 			}
 			
@@ -907,14 +921,15 @@ class mySVG {
 				this.movingAnElement = false;
 			} else if (this.selectingRectangle) {
 				this.stopSelectionInRectangle();
-			} else {
-				// if (distance2(this.dragStartMousePos, this.mousePos) < EPS) {
-				if (this.targetElement && movablePointTypes.includes(this.targetElement.type)) {
-					if (this.selected.length >= 2) {
-						this.toggleSelectElement(this.targetId);
-					}
-				}
 			}
+			// else {
+			//	// if (distance2(this.dragStartMousePos, this.mousePos) < EPS) {
+			// 	if (this.targetElement && movablePointTypes.includes(this.targetElement.type)) {
+			// 		if (this.selected.length >= 2) {
+			// 			this.toggleSelectElement(this.targetId);
+			// 		}
+			// 	}
+			// }
 		} else if (this.mouseButtons & MouseButton.Right) {
 			if (this.selectingRectangle) {
 				this.stopSelectionInRectangle();
@@ -1115,7 +1130,7 @@ class mySVG {
 				if (this.targetElement.type == ObjectTypes.Curve) {
 					this.startCurveEdit(this.targetId);
 					// this.unselectAll();
-				} else if (this.targetElement && unconstrainedPointTypes.includes(this.targetElement.type)) {
+				} else if (this.targetElement && infinitelyClosePointTypes.includes(this.targetElement.type)) {
 				// (this.targetElement.type == ObjectTypes.LastFreePoint) {
 					this.startTangentEdit(this.targetId);
 					// this.unselectAll();
@@ -1162,8 +1177,29 @@ class mySVG {
 	// -- move
 	
 	moveSelectedBy(dx, dy) {
-		for (let index = 0; index < this.selected.length; index++) {
-			const id = this.selected[index]
+		// -- find selected points with no selected ancestors
+		let topSelected = [];
+		if (this.selected.includes(this.basePoint)) {
+			topSelected = [this.basePoint];
+		} else {
+			for (const id of this.selected) {
+				const element = this.elements[id];
+				let ancestor = this.elements[element.base];
+				while (true) {
+					if (this.selected.includes(ancestor.id)) {
+						break;
+					}
+					if (ancestor.id == this.basePoint) {
+						topSelected.push(id);
+						break;
+					}
+					ancestor = this.elements[ancestor.base];
+				}
+			}
+		}
+		
+		// -- move descendants of the previous points
+		for (const id of topSelected) {
 			const element = this.elements[id];
 			if (movablePointTypes.includes(element.type)) {
 				// this.movePointBy(element, dx, dy);
@@ -1206,10 +1242,83 @@ class mySVG {
 				}
 			}
 		}
-		
 		// for (const id of this.descendants) {
 		// 	this.movePointBy(this.elements[id], dx, dy);
 		// }
+	}
+	
+	rotatePosToNewTangent(originalPos, centerOfRotation, newTangent) {
+		let dist = distance(centerOfRotation, originalPos);
+		return {
+			x: centerOfRotation.x + newTangent.x*dist,
+			y: centerOfRotation.y + newTangent.y*dist
+		};
+	}
+	
+	rotatePosToNewNormal(originalPos, centerOfRotation, oldNormal, oldTangent, newTangent) {
+		let dist = distance(centerOfRotation, originalPos);
+		let sign = Math.sign((oldNormal.x)*(oldTangent.y) + (oldNormal.y)*(-oldTangent.x));
+		return {
+			x: centerOfRotation.x + newTangent.y * dist * sign,
+			y: centerOfRotation.y - newTangent.x * dist * sign
+		};
+	}
+	
+	rotatePosAround(originalPos, centerOfRotation, angle) {
+		let v = rotate({x: originalPos.x-centerOfRotation.x,
+			y:originalPos.y-centerOfRotation.y}, angle);
+		return {
+			x: centerOfRotation.x + v.x,
+			y: centerOfRotation.y + v.y
+		};
+	}
+	
+	rotateDescendants(element, centerOfRotation, oldTangent, newTangent) {
+		let oldNormal = {
+			x: element.position.x - centerOfRotation.x,
+			y: element.position.y - centerOfRotation.y
+		};
+		let curve = this.elements[element.curve];
+		// console.log(element.position, centerOfRotation, oldNormal, newTangent);
+		// let oldPos = element.position;
+		// element.position = this.rotatePosToNewNormal(element.position, centerOfRotation, oldNormal, oldTangent, newTangent);
+		// curve.position2 = element.position;
+		
+		let dot = oldTangent.x*newTangent.x+oldTangent.y*newTangent.y;
+		let angle = (Math.abs(dot) >= 1)? 0 : Math.acos(dot);
+		let sign = Math.sign(newTangent.x * oldTangent.y + newTangent.y * (-oldTangent.x));
+		angle *= sign;
+		
+		// element.position = this.rotatePosAround(element.position, centerOfRotation, angle);
+		// curve.position2 = this.rotatePosAround(curve.position2, centerOfRotation, angle);
+		
+		// for (const id of element.children) {
+		// 	let child = this.elements[id];
+		// 	let curve = this.elements[child.curve];
+		// 	child.position = this.rotatePosAround(child.position, centerOfRotation, angle);
+		// 	curve.position1 = this.rotatePosAround(curve.position1, centerOfRotation, angle);
+		// 	curve.position2 = this.rotatePosAround(curve.position2, centerOfRotation, angle);
+		// 	if (child.type == ObjectTypes.LastFreePoint) {
+		// 		curve.positionC1 = this.rotatePosAround(curve.positionC1, centerOfRotation, angle);
+		// 		curve.positionC2 = this.rotatePosAround(curve.positionC2, centerOfRotation, angle);
+		// 	}
+		// }
+		
+		let queue = [element.id];
+		while (queue.length > 0) {
+			let descendant = this.elements[queue.shift()];
+			let curve = this.elements[descendant.curve];
+			
+			descendant.position = this.rotatePosAround(descendant.position, centerOfRotation, angle);
+			curve.position1 = this.rotatePosAround(curve.position1, centerOfRotation, angle);
+			curve.position2 = this.rotatePosAround(curve.position2, centerOfRotation, angle);
+			if (descendant.type == ObjectTypes.LastFreePoint) {
+				curve.positionC1 = this.rotatePosAround(curve.positionC1, centerOfRotation, angle);
+				curve.positionC2 = this.rotatePosAround(curve.positionC2, centerOfRotation, angle);
+			}
+			// -- add children of descendant to queue
+			queue = queue.concat(descendant.children);
+		}
 	}
 	
 	moveBasePointBy(element, dx, dy) {
@@ -1377,8 +1486,8 @@ class mySVG {
 	}
 	
 	unselectAll() {
-		for (let index = 0; index < this.selected.length; index++) {
-			const element = this.elements[this.selected[index]].element;
+		for (const id of this.selected) {
+			const element = this.elements[id].element;
 			element.classList.remove("selected");
 		}
 		this.selected = [];
@@ -1435,9 +1544,6 @@ class mySVG {
 		this.editingControl2 = false;
 		this.editingElement1 = id;
 		this.editingElement2 = id;
-		// console.log("startCurveEdit", curve.id);
-		// console.log(curve.positionC1);
-		// console.log(curve.positionC1);
 		
 		var curve1 = this.elements[this.editingElement1];
 		this.controlPoint1.position = curve1.positionC1;
@@ -1472,8 +1578,15 @@ class mySVG {
 			this.controlPoint2Line.element.setAttributeNS(null, "visibility", "hidden");
 		}
 		
-		if (point.children.length == 1) {
-			let child = this.elements[point.children[0]];
+		let freeChildren = point.children.reduce(function(arr, id) {
+			if (this.elements[id].type == ObjectTypes.LastFreePoint) {
+				arr.push(id);
+			}
+			return arr;
+		}.bind(this), []);
+		
+		if (freeChildren.length == 1) { // point.children.length == 1
+			let child = this.elements[freeChildren[0]]; //[point.children[0]];
 			if (child.type == ObjectTypes.LastFreePoint) {
 				this.editingElement1 = child.curve;
 				var curve1 = this.elements[this.editingElement1];
@@ -1506,16 +1619,17 @@ class mySVG {
 	editCurveControl1(id) {
 		let element = this.elements[id];
 		let firstPoint = this.elements[element.point1];
-		let tangent = normalized(element.getTangentAt(0));
+		let oldTangent = normalized(element.getTangentAt(0));
 		// -- edit control 1 of the curve
 		if (unconstrainedPointTypes.includes(firstPoint.type)) {
 			this.controlPoint1.moveBy(this.dx, this.dy);
 		} else if (firstPoint.type == ObjectTypes.LastSatellitePoint) {
-			let v = this.projectDirOnTangent(tangent, this.dx, this.dy);
+			let v = this.projectDirOnTangent(oldTangent, this.dx, this.dy);
 			this.controlPoint1.moveBy(v.x, v.y);
 		}
 		this.controlPoint1Line.position2 = this.controlPoint1.position;
 		element.positionC1 = this.controlPoint1.position;
+		let tangent = normalized(element.getTangentAt(0));
 		
 		if (firstPoint.type == ObjectTypes.LastFreePoint) {
 			let curve = this.elements[firstPoint.curve];
@@ -1536,6 +1650,8 @@ class mySVG {
 							x: curve.position1.x + tangent.x*tangentLength,
 							y: curve.position1.y + tangent.y*tangentLength
 						};
+					} else if (child.type == ObjectTypes.LastSatellitePoint) {
+						this.rotateDescendants(child, firstPoint.position, oldTangent, tangent);
 					}
 				}
 			}
@@ -1552,6 +1668,7 @@ class mySVG {
 	
 	editCurveControl2(id) {
 		let element = this.elements[id];
+		let oldTangent = normalized(element.getTangentAt(1));
 		// -- edit control 2 of the curve
 		this.controlPoint2.moveBy(this.dx, this.dy);
 		this.controlPoint2Line.position2 = this.controlPoint2.position;
@@ -1563,11 +1680,9 @@ class mySVG {
 			let child = this.elements[childId];
 			let curve = this.elements[child.curve];
 			if (child.type == ObjectTypes.LastFreePoint) {
-				let tangentLength = distance(curve.position1, curve.positionC1);
-				curve.positionC1 = {
-					x: curve.position1.x + tangent.x*tangentLength,
-					y: curve.position1.y + tangent.y*tangentLength
-				};
+				curve.positionC1 = this.rotatePosToNewTangent(curve.positionC1, lastPoint.position, tangent);
+			} else if (child.type == ObjectTypes.LastSatellitePoint) {
+				this.rotateDescendants(child, lastPoint.position, oldTangent, tangent);
 			}
 		}
 		
