@@ -152,9 +152,10 @@ svg {
   /* outline: 1pt dashed #00000030; */
 }
 
-.line.draggable:hover {
-  /* outline: 1pt solid var(--svg-transparent-dark-color); */
-}
+/* .line.draggable:hover {
+  outline: 1pt solid var(--svg-transparent-dark-color);
+} */
+
 
 .line.selected {
   stroke: var(--svg-selected-color);

@@ -1,20 +1,6 @@
-// Show popup message: alert("Hello! I am an alert box!!");
-// Print: console.log("Hello! I am a console message!");
 
-// Change background color if bool "activate" true
-function bginfo(activate) {
-	if (activate) {
-		$('body').css("background","#8af");
-	} else {
-		$('body').css("background","#36373a");
-	}
-}
 
-// Boundary for object with class "confine"
-var boundaryX1 = 5;
-var boundaryX2 = 50;
-var boundaryY1 = 50;
-var boundaryY2 = 90;
+const xmlns = 'http://www.w3.org/2000/svg';
 
 // "Enums"
 const Tool = {
@@ -34,7 +20,34 @@ const MouseButton = {
 	Forward: 16
 };
 
-const xmlns = 'http://www.w3.org/2000/svg';
+const ObjectTypes = {
+	Point: "Point",
+	Line: "Line",
+	BasePoint: "BasePoint",
+	LastFreePoint: "LastFreePoint",
+	LastSatellitePoint: "LastSatellitePoint",
+	IntermediatePoint: "IntermediatePoint"
+};
+
+const enriquesPointTypes = [
+	ObjectTypes.BasePoint,
+	ObjectTypes.LastFreePoint,
+	ObjectTypes.LastSatellitePoint,
+	ObjectTypes.IntermediatePoint
+];
+
+const movablePointTypes = [
+	ObjectTypes.BasePoint,
+	ObjectTypes.LastFreePoint,
+	ObjectTypes.LastSatellitePoint
+];
+
+const deletablePointTypes = [
+	ObjectTypes.LastFreePoint,
+	ObjectTypes.LastSatellitePoint
+];
+
+
 
 // Global state
 var initGlobalState = {
@@ -72,7 +85,6 @@ function downloadInnerHtml(filename, elId, mimeType) {
 	var cssString;
 	// cssString = $.get("/enr.css");
 	cssString = $.ajax({type: "GET", url: "/svg.css", async: false}).responseText;
-	// console.log(cssString);
 	
 	elHtml = elHtml.replace("</svg>", "<style>"+cssString+"</style></svg>");
 	
@@ -93,7 +105,6 @@ $(function() {
 	
 	// Function called when radio buttons "tool" change value
 	$('input[type=radio][name=tool]').change(function() {
-		// console.log(Tools);
 		if (Tools.includes(this.value)) {
 			GlobalState.tool = this.value;
 		}
@@ -160,6 +171,7 @@ class Point extends myElement {
 		super(_svg, "point"+Point.newID(), _pos);
 		this.r = _r;
 		this.element = this.createPoint(_pos, _r, true);
+		this.type = ObjectTypes.Point;
 	}
 	
 	createPoint(pos, r, draggable) {
@@ -205,6 +217,7 @@ class Line extends myElement {
 		this.pos2 = _pos2;
 		this.pos = this.center();
 		this.element = this.createLine(_pos1, _pos2, true);
+		this.type = ObjectTypes.Line;
 	}
 	
 	get position1() {
@@ -282,46 +295,47 @@ class BasePoint extends Point {
 	constructor(_svg, _pos, _r) {
 		super(_svg, _pos, _r);
 		this.children = []; // JS
+		this.type = ObjectTypes.BasePoint;
 	}
 	
 	moveTo(x, y) {
 		super.moveTo(x,y);
-		for (const dependingPoint of this.children) {
-			dependingPoint.updateBase()
+		for (const lastFreePoint of this.children) {
+			lastFreePoint.updateBase()
 			// this.moveBy(x-this.pos.x, y-this.pos.y);
 		}
 	}
 }
 
-class DependingPoint extends Point {
+class LastFreePoint extends Point {
 	static instanceNumber = 0;
 	static newID() {
-		let n = DependingPoint.instanceNumber;
-		DependingPoint.instanceNumber++;
+		let n = LastFreePoint.instanceNumber;
+		LastFreePoint.instanceNumber++;
 		return n;
 	}
 	
 	static new(_elements, _lineParent, _pointParent, _base, _pos, _r) {
-		let pt = new DependingPoint(_elements, _lineParent, _pointParent, _base, _pos, _r);
+		let pt = new LastFreePoint(_elements, _lineParent, _pointParent, _base, _pos, _r);
 		_elements[pt.id] = pt;
+		console.log("new", pt.base.children);
 		return pt;
 	}
 	
 	constructor(_elements, _lineParent, _pointParent, _base, _pos, _r) {
 		super(_pointParent, _pos, _r);
-		this.point = this.element; // svg point
-		// this.line = new Line(_lineParent, _base.position, _pos); // JS line
 		this.line = Line.new(_elements, _lineParent, _base.position, _pos); // JS line
-		this.base = _base; // JS BasePoint / DependingPoint
+		this.base = _base; // JS BasePoint / LastFreePoint
 		this.base.children.push(this);
 		this.children = []; // JS
+		this.type = ObjectTypes.LastFreePoint;
 	}
 	
 	moveTo(x, y) {
 		super.moveTo(x,y);
 		this.line.position2 = {x: x, y: y};
-		for (const dependingPoint of this.children) {
-			dependingPoint.updateBase()
+		for (const lastFreePoint of this.children) {
+			lastFreePoint.updateBase()
 			// this.moveBy(x-this.pos.x, y-this.pos.y);
 		}
 	}
@@ -330,28 +344,15 @@ class DependingPoint extends Point {
 		this.line.position1 = this.base.position;
 	}
 	
-	// remove tree starting at this point
-	del() {
-		// -- remove from base's children
-		let index = this.base.children.indexOf(this.id);
-		// if (index > -1) { // should be
-		this.base.children.splice(index, 1);
-		// }
-		// -- del children
-		for (const dependingPoint of this.children) {
-			dependingPoint.del()
-			// this.moveBy(x-this.pos.x, y-this.pos.y);
+	get descendants() {
+		let desc = this.children;
+		for (const lastFreePoint of this.children) {
+			desc = desc.concat(lastFreePoint.descendants);
 		}
+		return desc;
 	}
 }
 
-class fromToProx {
-	constructor(_from, _to, _prox) {
-		this.from = _from;
-		this.to = _to;
-		this.prox = (_prox || null);
-	}
-}
 
 class mySVG {
 	static instanceNumber = 0;
@@ -409,14 +410,13 @@ class mySVG {
 		this.basePoint = BasePoint.new(this.elements, this.pointGroup, {x:10, y:80}, 6);
 		
 		// free
-		this.proximity = []; // {from: p1, to: p2, prox: p0}
-		this.selectedPoint;
+		this.selectedElementId;
 		this.selectPoint(this.basePoint);
 		this.points = [];
-		// this.points.push(DependingPoint.new(this.elements, this.lineGroup, this.pointGroup, this.basePoint, {x:20,y:50}, 4));
-		// this.points.push(DependingPoint.new(this.elements, this.lineGroup, this.pointGroup, this.points[0], {x:40,y:50}, 4));
-		// this.points.push(DependingPoint.new(this.elements, this.lineGroup, this.pointGroup, this.points[1], {x:60,y:50}, 4));
-		// this.points.push(DependingPoint.new(this.elements, this.lineGroup, this.pointGroup, this.points[0], {x:40,y:30}, 4));
+		// this.points.push(LastFreePoint.new(this.elements, this.lineGroup, this.pointGroup, this.basePoint, {x:20,y:50}, 4));
+		// this.points.push(LastFreePoint.new(this.elements, this.lineGroup, this.pointGroup, this.points[0], {x:40,y:50}, 4));
+		// this.points.push(LastFreePoint.new(this.elements, this.lineGroup, this.pointGroup, this.points[1], {x:60,y:50}, 4));
+		// this.points.push(LastFreePoint.new(this.elements, this.lineGroup, this.pointGroup, this.points[0], {x:40,y:30}, 4));
 		
 		this.makeInteractive();
 	}
@@ -496,68 +496,75 @@ class mySVG {
 	// -- free
 	
 	unselectPoint() {
-		if (this.selectedPoint) {
-			const svgElement = this.selectedPoint.element;
-			let classString = svgElement.getAttributeNS(null, "class");
-			classString = classString.replaceAll(" selectedPoint", "");
-			svgElement.setAttributeNS(null, "class", classString);
-			this.selectedPoint = null;
+		if (this.selectedElementId) {
+			const svgElement = this.elements[this.selectedElementId].element;
+			svgElement.classList.remove("selectedPoint");
+			this.selectedElementId = null;
 		}
 	}
 	
 	selectPoint(pt) {
 		this.unselectPoint();
-		this.selectedPoint = pt;
+		this.selectedElementId = pt.id;
 		const svgElement = pt.element;
-		let classString = svgElement.getAttributeNS(null, "class");
-		if (!classString.includes("selectedPoint")) {
-			svgElement.setAttributeNS(null, "class", classString+" selectedPoint");
-		}
+		svgElement.classList.add("selectedPoint");
 	}	
 	
 	freeClick(evt) {
 		// -- save click position
-		this.lastMousePos = this.getMousePosition(evt);
-
+		let pos = this.getMousePosition(evt);
+		this.lastMousePos = pos;
+		let id = evt.target.id;
+		let element = this.elements[id];
+		
 		if (evt.buttons & MouseButton.Left) {
-			// -- click on background
-			if (evt.target.id == 'background' && this.selectedPoint) {
+			if (id == 'background' && this.selectedElementId) {
+				// >> click on background
+				
 				this.unselectAll();
-				// -- create point at mouse position
-				let pos = this.getMousePosition(evt);
-				let pt;
-				// -- connect to last free point
-				// if (this.selectedPoint) {
-					pt = DependingPoint.new(this.elements, this.lineGroup, this.pointGroup, this.selectedPoint, pos, 4);
-				// }
-				this.points.push(pt);
+				// -- create free point at mouse position, attached to this.selectedElementId
+				let pt = this.createFreePoint(this.selectedElementId, pos);
 				// -- select created point
 				this.selectPoint(pt);
 				
-				// -- click on draggable element
+			} else if (enriquesPointTypes.includes(element.type)) {
+				// >> click on point
 				// evt.target.classList.contains('draggable')
-			} else if (['draggable', 'point'].every(className => evt.target.classList.contains(className))) {
-				// -- Select the clicked element
+				// ['draggable', 'point'].every(className => evt.target.classList.contains(className))
 				this.selectPoint(this.elements[evt.target.id]);
+				
 			} else {
 				this.unselectPoint();
 			}
+			
 		} else if (evt.buttons & MouseButton.Right) {
 			this.unselectPoint();
-			console.log(this.points);
 		}
+	}
+	
+	createFreePoint(parentId, pos) {
+		let pt;
+		let parent = this.elements[parentId];
+
+		// -- create free point connected to parent
+		pt = LastFreePoint.new(this.elements, this.lineGroup, this.pointGroup,
+													 parent, pos, 4);
+		this.points.push(pt);
+		
+		console.log("parent.children =", parent.children.map(pt => pt.id));
+		return pt;
 	}
 	
 	freeDrag(evt) {
 		if (evt.buttons & MouseButton.Left) {
-			if (this.selectedPoint) {
+			if (this.selectedElementId) {
 				evt.preventDefault();
 				let pos = this.getMousePosition(evt);
 				let x = pos.x - this.lastMousePos.x;
 				let y = pos.y - this.lastMousePos.y;
 				this.lastMousePos = pos; // update last mouse position
 				// -- drag object(s)
-				this.selectedPoint.moveBy(x, y);
+				this.elements[this.selectedElementId].moveBy(x, y);
 			}
 		}
 	}
@@ -574,7 +581,9 @@ class mySVG {
 		
 		if (evt.buttons & MouseButton.Left) {
 			// -- click on background
-			if (evt.target.id == 'background') {
+			let id = evt.target.id;
+			let element = this.elements[id];
+			if (id == 'background') {
 				this.unselectAll();
 				// -- create circle at mouse position
 				let pos = this.getMousePosition(evt);
@@ -583,7 +592,9 @@ class mySVG {
 				this.selectedElement = element;
 				
 				// -- click on draggable element
-			} else if (evt.target.classList.contains('draggable')) {
+			} else if (movablePointTypes.includes(element.type)) {
+				//evt.target.classList.contains('draggable')
+				
 				// -- unselect if click on not selected
 				if (!this.selected.includes(evt.target.id)) {
 					this.unselectAll();
@@ -630,43 +641,64 @@ class mySVG {
 	
 	// -- eraser
 	
-	eraserClick(evt) {
-		this.eraser(evt);
-	}
+	eraserClick = this.eraser;
 	
-	eraserDrag(evt) {
-		this.eraser(evt);
-	}
+	eraserDrag = this.eraser;
 	
 	eraserEndDrag(evt) {
 		this.selectedElement = null;
 	}
-
+	
 	eraser(evt) {
 		if (evt.buttons & MouseButton.Left) {
-			// -- Select the clicked element
-			if (evt.target.classList.contains('draggable')) {
-				// this.selectedElement = evt.target;
-				this.selectedElement = this.elements[evt.target.id];
+			let id = evt.target.id;
+			let element = this.elements[id];
+			if (id != 'background' && deletablePointTypes.includes(element.type)) {
+				// evt.target.classList.contains('draggable')
+				this.erasePointAndDescendants(element);
 			} else {
 				this.selectedElement = null;
 			}
-			// -- click on element
-			if (this.selectedElement) {
-				// -- remove element from svg
-				this.selectedElement.element.remove();//.parentNode.removeChild(this.selectedElement);
-				// -- remove element from this.selected
-				this.unselect(this.selectedElement.id);
-				// -- remove element from this.elements
-				// let index = this.elements.indexOf(this.selectedElement);
-				// if (index > -1) { // only splice array when item is found
-				// 	this.elements.splice(index, 1); // 1 means remove one item only
-				// }
-				delete this.elements[this.selectedElement.id];
-				// -- unselect element
-				this.selectedElement = null;
-				// console.log(this.elements);
-			}
+		}
+	}
+	
+	erasePointAndDescendants(element) {
+		let parentPoint = element;
+		// this.selectedElement = parentPoint;
+		console.log("parentPoint.id =", parentPoint.id);
+		console.log("parentPoint.children =", parentPoint.children.map(pt => pt.id));
+		
+		// -- unselect element
+		this.selectedElement = null;
+		this.unselectPoint();
+		this.unselectAll();
+		
+		// -- remove from base's children
+		let index = parentPoint.base.children.indexOf(parentPoint.id);
+		parentPoint.base.children.splice(index, 1);
+
+		// -- use the element's removal function
+		// parentPoint.del();
+		
+		// -- remove descendants and itself
+		let desc = parentPoint.descendants; // includes parentPoint
+		desc.push(parentPoint);
+		console.log("desc = ", desc);
+		for (const descendantPoint of desc) {
+			console.log(descendantPoint.id);
+			// this.unselectElement(descendantPoint.id); // included in unselectAll()
+			
+			delete this.elements[descendantPoint.id]; // remove from mySVG
+			descendantPoint.element.remove(); // remove from SVG
+			
+			// -- clear links to other points
+			descendantPoint.children = [];
+			descendantPoint.base = null;
+			
+			// -- remove child line
+			console.log(descendantPoint.line.id);
+			delete this.elements[descendantPoint.line.id]; // remove from mySVG
+			descendantPoint.line.element.remove(); // remove from SVG
 		}
 	}
 	
@@ -675,35 +707,25 @@ class mySVG {
 	unselectAll() {
 		for (let index = 0; index < this.selected.length; index++) {
 			const element = this.elements[this.selected[index]].element;
-			let classString = element.getAttributeNS(null, "class");
-			classString = classString.replaceAll(" selected", "");
-			element.setAttributeNS(null, "class", classString);
+			element.classList.remove("selected");
 		}
-		// console.log(this.selected);
 		this.selected = [];
 	}
 	
-	unselect(id) {
+	unselectElement(id) {
 		let index = this.selected.indexOf(id);
 		if (index > -1) { // only splice array when item is found
 			const element = this.elements[id].element;
-			let classString = element.getAttributeNS(null, "class");
-			classString = classString.replaceAll(" selected", "");
-			element.setAttributeNS(null, "class", classString);
-			
+			element.classList.remove("selected");
 			this.selected.splice(index, 1); // 1 means remove one item only
 		}
-		// console.log(this.selected);
 	}
 	
-	select(id) {
+	selectElement(id) {
 		const element = this.elements[id];
 		this.selected.push(element.id);
 		const svgElement = element.element;
-		let classString = svgElement.getAttributeNS(null, "class");
-		if (!classString.includes("selected")) {
-			svgElement.setAttributeNS(null, "class", classString+" selected");
-		}
+		svgElement.classList.add("selected");
 	}
 	
 	addSelectRectangle() {
@@ -722,18 +744,22 @@ class mySVG {
 	selectClick(evt) {
 		if (evt.buttons & (MouseButton.Left | MouseButton.Right)) {
 			// -- click on background
-			if (evt.target.id == 'background') {
+			let id = evt.target.id;
+			let element = this.elements[id];
+			if (id == 'background') {
 				this.unselectAll();
 				this.dragStart = this.getMousePosition(evt);
 
 				// -- click on draggable element
-			} else if (evt.target.classList.contains('draggable')) {
+			} else if (movablePointTypes.includes(element.type)) {
+				// evt.target.classList.contains('draggable')
+				
 				if (this.selected.includes(evt.target.id)) {
 					// -- unselect the clicked element
-					this.unselect(evt.target.id);
+					this.unselectElement(evt.target.id);
 				} else {
 					// -- select the clicked element
-					this.select(evt.target.id);
+					this.selectElement(evt.target.id);
 					this.dragStart = null;
 				}
 			}
@@ -762,8 +788,12 @@ class mySVG {
 				});
 				for (const [id, element] of Object.entries(this.elements)) {
 					const pos = element.position;
-					if (minPos.x < pos.x && pos.x < maxPos.x && minPos.y < pos.y && pos.y < maxPos.y) {
-						this.select(id);
+					if (minPos.x < pos.x &&
+						pos.x < maxPos.x &&
+						minPos.y < pos.y &&
+						pos.y < maxPos.y &&
+						movablePointTypes.includes(element.type) ) {
+						this.selectElement(id);
 					}
 				}
 			}
@@ -776,7 +806,6 @@ class mySVG {
 		});
 		this.dragStart = null;
 	}
-	
 	
 	// -- GENERAL
 	
