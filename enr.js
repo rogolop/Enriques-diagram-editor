@@ -15,6 +15,7 @@ window.addEventListener("load", function() {
   // console.log(svg);
   
   var item = document.getElementById('item');
+  
 
   
   //### Draw boundary rectangle for confined objects
@@ -30,13 +31,25 @@ window.addEventListener("load", function() {
   // svg.insertBefore(element, document.getElementById('background').nextSibling);
 
   //### Draw black circle
-  // var element = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-  // element.setAttributeNS(null, 'cx', 50);
-  // element.setAttributeNS(null, 'cy', 30);
-  // element.setAttributeNS(null, 'r', 5);
-  // element.setAttributeNS(null, 'id', 'target');
-  // element.setAttributeNS(null, 'class', 'draggable');
-  // svg.appendChild(element);
+  var element = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  element.setAttributeNS(null, 'cx', 50);
+  element.setAttributeNS(null, 'cy', 30);
+  element.setAttributeNS(null, 'r', 5);
+  element.setAttributeNS(null, 'id', 'target');
+  element.setAttributeNS(null, 'class', 'draggable');
+  svg.appendChild(element);
+  
+  //### Draw black circle using jQuery
+  var $element = $(document.createElementNS('http://www.w3.org/2000/svg', 'circle'));
+  $element.attr({
+    cx: 100,
+    cy: 30,
+    r: 5,
+    id: 'target',
+    class: 'draggable'
+  });
+  $element.appendTo(svg);
+  // svg.appendChild($element);
 
   //### Write Hello World
   // var element = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -59,16 +72,12 @@ window.addEventListener("load", function() {
   // });
 });
 
-
-
 var moveSlider = function(slider, direction) {
   var value = slider.value;
   var circle = document.getElementById("target");
   var coord = "c" + direction;
   circle.setAttributeNS(null, coord, value);
 }
-
-
 
 function makeInteractive(evt) {
   var svg = evt.target;
@@ -198,10 +207,6 @@ function makeInteractive(evt) {
    
 }
 
-
-
-////////////////////////////////////////////////////////////////////
-
 // Download html element with a given id (and its children)
 // Source: https://stackoverflow.com/questions/22084698/how-to-export-source-content-within-div-to-text-html-file
 function downloadInnerHtml(filename, elId, mimeType) {
@@ -214,5 +219,202 @@ function downloadInnerHtml(filename, elId, mimeType) {
   link.click(); 
 }
 
+////////////////////////////////////////////////////////////////////
 
+var InteractiveSVG = (function() {
+  var xmlns = 'http://www.w3.org/2000/svg';
+  
+  /*************************************************
+   *      InteractiveSVG
+   *  Main object for the whole SVG.
+  **************************************************/
+
+  // Initialize InteractiveSVG
+  var InteractiveSVG = function($container, width, height) {
+    this.$svg = $(document.createElementNS(xmlns, 'svg'));
+    this.$svg.attr({
+      xmlns: xmlns,
+      class: 'interactiveSVG',
+      width: width || 400,
+      height: height || 400,
+    }).appendTo($container);
+
+    this.elements = {};
+    this.selected = false;
+    this._addMouseEventHandlers();
+    this.$background = this._addBackground();
+  };
+
+  // Call this to create a new InteractiveSVG
+  InteractiveSVG.create = function(id, width, height) {
+    var $container = $('#' + id);
+    if (!$container) {
+      console.error("No element found with id " + id);
+      return;   
+    }
+    return new InteractiveSVG($container, width, height);
+  };
+  
+  // Add background to the InteractiveSVG
+  InteractiveSVG.prototype._addBackground = function() {
+    return this.addElement('rect').attr({
+      class: 'background',
+      width: this.$svg.attr('width'),
+      height: this.$svg.attr('height')
+    });
+  };
+  
+  // What to do with mouse events clicking on the InteractiveSVG (?)
+  InteractiveSVG.prototype._addMouseEventHandlers = function() {
+    var self = this;
+
+    this.$svg.on('mousemove', function(evt) {
+      if (self.selected) {
+        evt.preventDefault();
+
+        // Get dragging to work on touch device
+        if (evt.type === 'touchmove') { evt = evt.touches[0]; }
+
+        // Move based on change in mouse position
+        self.selected.translate(
+          evt.clientX - self.dragX,
+          evt.clientY - self.dragY
+        );
+
+        // Update mouse position
+        self.dragX = evt.clientX;
+        self.dragY = evt.clientY;
+      }
+    });
+
+    this.$svg.on('mouseup', function() {
+        self.selected = false;
+    });
+  };
+  
+  // What to do with mouse events clicking on an element (?)
+  InteractiveSVG.prototype._setAsDraggable = function(element) {
+    var self = this;
+    element.$element.on('mousedown', function(evt) {
+      self.selected = element;
+
+      // Get dragging to work on touch device
+      if (evt.type === 'touchstart') { evt = evt.touches[0]; }
+      self.dragX = evt.clientX;
+      self.dragY = evt.clientY;
+    });
+  };
+  
+  // Add a new SVG element of type "tagName"
+  InteractiveSVG.prototype.addElement = function(tagName) {
+    return $(document.createElementNS(xmlns, tagName)).appendTo(this.$svg);
+  };
+
+  
+  /*************************************************
+   *      SVG Element Object
+   *  A object that wraps an SVG element.
+  **************************************************/
+
+  var SVGElement = function(svgObject, attributes, hiddenAttributes) {
+    this.svg = svgObject;
+    hiddenAttributes = ['static', 'label', 'draggable'].concat(hiddenAttributes || []);
+    
+    // Fake attributes that control other attributes
+    this.proxyAttributes = this.proxyAttributes || {};
+
+    // Map attributes that this object to list of objects that share that attribute
+    this.linkedAttributes = {};
+
+    // hiddenAttributes are attributes for the SVGElement object, but not for SVG element itself.
+    for (var i = 0; i < hiddenAttributes.length; i++) {
+      var attributeName = hiddenAttributes[i];
+      if (attributes[attributeName] !== undefined) {
+        this[attributeName] = attributes[attributeName];
+        delete attributes[attributeName];
+      }
+    }
+
+    this.update(attributes);
+
+    if (this.draggable) { svgObject._setAsDraggable(this); }
+
+    if (this.label) { svgObject.elements[this.label] = this; }
+  };
+  
+  // Update the object with a {key, value} map of attributes
+  SVGElement.prototype.update = function(attributes) {
+    // Update linked attributes
+    for (var attributeName in attributes) {
+      var value = attributes[attributeName];
+
+      this.updateAttribute(attributeName, value);
+
+      var linkedAttributes = this.linkedAttributes[attributeName];
+      if (linkedAttributes) {
+        for (var i = 0; i < linkedAttributes.length; i++) {
+          this.linkedAttributes[attributeName][i](value);
+        }
+      }
+    }
+  };
+  
+  // Update the object with one given attribute and value
+  SVGElement.prototype.updateAttribute = function(attributeName, value) {
+    // Update object attributes
+    this[attributeName] = value;
+
+    // Update SVG element attributes
+    if (this.proxyAttributes[attributeName]) {
+      this.proxyAttributes[attributeName](this.$element, value);
+    } else {
+      this.$element.attr(attributeName, value);
+    }
+  };
+  
+  // Update the object with a {key, value} map of attributes if not yet set
+  SVGElement.prototype._setAttrIfNotYetSet = function(attributes) {
+    var el = this.$element[0];
+    for (var attributeName in attributes) {
+      if (!el.hasAttribute(attributeName)) {
+        this.$element.attr(attributeName, attributes[attributeName]);
+      }
+    }
+  };
+  
+  SVGElement.prototype.translate = function(dx, dy) {
+    this.update({ x: this.x + dx, y: this.y + dy });
+  };
+
+  /*************************************************
+   *      InteractivePoint
+   *  An SVG circle which can be draggable.
+  **************************************************/
+
+  var InteractivePoint = function(svgObject, attributes) {
+    this.$element = svgObject.addElement('circle');
+    this.draggable = !attributes.static;
+    
+    // Changing this object's x and y attributes changes its element's cx and cy attributes
+    this.proxyAttributes = {
+      x: function(el, value) { el.attr('cx', value); },
+      y: function(el, value) { el.attr('cy', value); }
+    };
+
+    SVGElement.call(this, svgObject, attributes);
+  
+    // Set attributes
+    this._setAttrIfNotYetSet({
+      'r': this.draggable ? 6 : 3,
+      'class': this.draggable ? "draggable draggable-point" : "static-point"
+    });
+
+    // Set classes
+    this.$element.addClass("point");
+  };
+  InteractivePoint.prototype = Object.create(SVGElement.prototype);
+  
+  
+  return InteractiveSVG;
+})();
 
