@@ -1,0 +1,44 @@
+<!DOCTYPE HTML>
+<html lang="en">
+
+
+<head>
+  <title>ENR1</title>
+  <link rel="shortcut icon" type="image/png" href="favicon.png">
+  <link rel="stylesheet" type="text/css" href="enr1.css">
+  <script type="text/javascript" src="enr1.js">
+  </script>
+  <!-- <style type="text/css">
+      .svg-wrapper {
+          display: inline-block;  
+      }
+  </style> -->
+</head>
+
+
+
+<body>
+  <button onClick="downloadInnerHtml('exp.svg', 'mainSVG', 'image/svg+xml')">Download</button>
+  <!-- <a href="#" id="downloadLink">Download the inner html</a> -->
+  <input type="range" min="1" max="100" value="50" oninput="moveSlider(this, 'x')"/>
+  <input type="range" min="1" max="100" value="50" oninput="moveSlider(this, 'y')"/>
+  
+  
+  <svg id="mainSVG" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100" onload="makeInteractive(evt)">
+    <rect id="background" width="100%" height="100%" fill="#eee">
+      <title>Background</title>
+    </rect>
+    <!-- <line 
+      x1="10" y1="50"
+      x2="20" y2="80"
+      stroke="black" />
+    <g id="item"></g> -->
+    
+    
+    
+    <rect class="draggable confine" x="5" y="55" width="8" height="10" fill="#007bff"/>
+    <circle class="draggable confine" cx="10" cy="70" r="5" fill="#900"></circle>
+    <rect class="static" x="18" y="55" width="8" height="10"   fill="#888"/>
+  </svg>
+
+</body>
