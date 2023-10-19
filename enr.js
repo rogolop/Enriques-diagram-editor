@@ -1,5 +1,5 @@
-// Show popup message
-// e.g.: alert("Hello! I am an alert box!!");
+// Show popup message: alert("Hello! I am an alert box!!");
+// Print: console.log("Hello! I am a console message!");
 
 // Change background color if bool "activate" true
 function bginfo(activate) {
@@ -22,6 +22,7 @@ const Tool = {
 	Eraser: "eraser",
 	Select: "select",
 	Connect: "connect",
+	Free: "free"
 };
 const Tools = Object.keys(Tool).map(function(key){return Tool[key];});
 
@@ -35,24 +36,9 @@ const MouseButton = {
 
 const xmlns = 'http://www.w3.org/2000/svg';
 
-// // Know mouse state
-// function setPrimaryButtonState(evt) {
-// 	// 1 -> left
-// 	// 2 -> right
-// 	// 4 -> middle
-// 	// 8 -> back
-// 	// 16 -> forward
-// 	GlobalState.primaryMouseButtonDown = (evt.buttons & 1);
-// 	// var flags = (evt.buttons !== undefined) ? evt.buttons : evt.which;
-// 	// GlobalState.primaryMouseButtonDown = (flags & 1) === 1;
-// }
-// document.addEventListener("mousedown", setPrimaryButtonState);
-// document.addEventListener("mousemove", setPrimaryButtonState);
-// document.addEventListener("mouseup", setPrimaryButtonState);
-
 // Global state
 var initGlobalState = {
-	tool: Tool.Main
+	tool: Tool.Free
 };
 var GlobalState = initGlobalState;
 
@@ -100,8 +86,8 @@ function downloadInnerHtml(filename, elId, mimeType) {
 
 /////////////////////////////////////////////////////////////////////
 
-// When document is loaded
-$(document).ready(function() {
+// When the page has completed loading
+$(function() {
 	// Initialize radio buttons "tool"
 	$('input:radio[name=tool]').val([initGlobalState.tool]);
 	
@@ -286,6 +272,87 @@ class Line extends myElement {
 	}
 }
 
+class BasePoint extends Point {
+	static new(_elements, _svg, _pos, _r) {
+		let pt = new BasePoint(_svg, _pos, _r);
+		_elements[pt.id] = pt;
+		return pt;
+	}
+	
+	constructor(_svg, _pos, _r) {
+		super(_svg, _pos, _r);
+		this.children = []; // JS
+	}
+	
+	moveTo(x, y) {
+		super.moveTo(x,y);
+		for (const dependingPoint of this.children) {
+			dependingPoint.updateBase()
+			// this.moveBy(x-this.pos.x, y-this.pos.y);
+		}
+	}
+}
+
+class DependingPoint extends Point {
+	static instanceNumber = 0;
+	static newID() {
+		let n = DependingPoint.instanceNumber;
+		DependingPoint.instanceNumber++;
+		return n;
+	}
+	
+	static new(_elements, _lineParent, _pointParent, _base, _pos, _r) {
+		let pt = new DependingPoint(_elements, _lineParent, _pointParent, _base, _pos, _r);
+		_elements[pt.id] = pt;
+		return pt;
+	}
+	
+	constructor(_elements, _lineParent, _pointParent, _base, _pos, _r) {
+		super(_pointParent, _pos, _r);
+		this.point = this.element; // svg point
+		// this.line = new Line(_lineParent, _base.position, _pos); // JS line
+		this.line = Line.new(_elements, _lineParent, _base.position, _pos); // JS line
+		this.base = _base; // JS BasePoint / DependingPoint
+		this.base.children.push(this);
+		this.children = []; // JS
+	}
+	
+	moveTo(x, y) {
+		super.moveTo(x,y);
+		this.line.position2 = {x: x, y: y};
+		for (const dependingPoint of this.children) {
+			dependingPoint.updateBase()
+			// this.moveBy(x-this.pos.x, y-this.pos.y);
+		}
+	}
+	
+	updateBase() {
+		this.line.position1 = this.base.position;
+	}
+	
+	// remove tree starting at this point
+	del() {
+		// -- remove from base's children
+		let index = this.base.children.indexOf(this.id);
+		// if (index > -1) { // should be
+		this.base.children.splice(index, 1);
+		// }
+		// -- del children
+		for (const dependingPoint of this.children) {
+			dependingPoint.del()
+			// this.moveBy(x-this.pos.x, y-this.pos.y);
+		}
+	}
+}
+
+class fromToProx {
+	constructor(_from, _to, _prox) {
+		this.from = _from;
+		this.to = _to;
+		this.prox = (_prox || null);
+	}
+}
+
 class mySVG {
 	static instanceNumber = 0;
 	static newID() {
@@ -308,13 +375,16 @@ class mySVG {
 			xmlns: xmlns,
 			class: 'mySVG',
 			onmouseenter: 'selectSVG(evt)',
-			id: (name ? name : "svg"+mySVG.newID())
+			id: (name ? name : "svg"+mySVG.newID()),
+			height: '200px'
 		}).appendTo($container);
 		this.$svg[0].setAttribute("viewBox", "0 0 " + (width || 100).toString() + ' ' + (height || 100).toString()); // can't use .attr for uppercase letters
 		
 		this.svg = this.$svg[0];
-		
+
+		// -- all "myElement"s
 		this.elements = {};
+		
 		// -- mainTool, erase
 		this.selectedElement = null;
 		this.lastMousePos;
@@ -326,52 +396,33 @@ class mySVG {
 		
 		// -- create elements
 		this.$background = this.addBackground();
+		this.lineGroup = $(document.createElementNS(xmlns, 'g')).appendTo(this.$svg).attr({
+			id: 'lineGroup'
+		})[0];
+		this.pointGroup = $(document.createElementNS(xmlns, 'g')).appendTo(this.$svg).attr({
+			id: 'pointGroup'
+		})[0];
+		
 		this.selectRectangle = this.addSelectRectangle();
-		// Point.new(this.elements, this.svg, {x:20, y:5}, 4);
-		Line.new(this.elements, this.svg, {x:0,y:20}, {x:20,y:20});
+		// this.basePoint = Point.new(this.elements, this.svg, {x:10, y:80}, 4);
+		// Line.new(this.elements, this.svg, {x:0,y:20}, {x:20,y:20});
+		this.basePoint = BasePoint.new(this.elements, this.pointGroup, {x:10, y:80}, 6);
+		
+		// free
+		this.proximity = []; // {from: p1, to: p2, prox: p0}
+		this.selectedPoint;
+		this.selectPoint(this.basePoint);
+		this.points = [];
+		// this.points.push(DependingPoint.new(this.elements, this.lineGroup, this.pointGroup, this.basePoint, {x:20,y:50}, 4));
+		// this.points.push(DependingPoint.new(this.elements, this.lineGroup, this.pointGroup, this.points[0], {x:40,y:50}, 4));
+		// this.points.push(DependingPoint.new(this.elements, this.lineGroup, this.pointGroup, this.points[1], {x:60,y:50}, 4));
+		// this.points.push(DependingPoint.new(this.elements, this.lineGroup, this.pointGroup, this.points[0], {x:40,y:30}, 4));
 		
 		this.makeInteractive();
 	}
 	
-	addBackground() {
-		let bg = $(document.createElementNS(xmlns, 'rect')).appendTo(this.$svg).attr({
-			class: 'background',
-			id: 'background',
-			width: '100%',
-			height: '100%'
-		});
-		return bg;
-	};
-	
-	makeInteractive() {
-		// mouse events
-		this.svg.addEventListener('mousedown', this.doOnClick.bind(this));
-		this.svg.addEventListener('mousemove', this.doOnDrag.bind(this));
-		this.svg.addEventListener('mouseup',  this.doOnEndDrag.bind(this));
-		this.svg.addEventListener('mouseleave', this.doOnEndDrag.bind(this));
-		// touch events
-		this.svg.addEventListener('touchstart', this.doOnClick.bind(this));
-		this.svg.addEventListener('touchmove', this.doOnDrag.bind(this));
-		this.svg.addEventListener('touchend', this.doOnEndDrag.bind(this));
-		this.svg.addEventListener('touchleave', this.doOnEndDrag.bind(this));
-		this.svg.addEventListener('touchcancel', this.doOnEndDrag.bind(this));
-		// avoid right click context menu
-		this.svg.addEventListener("contextmenu", e => e.preventDefault());
-	}
-	
-	// -- get mouse position in SVG coordinates
-	getMousePosition(evt) {
-		var CTM = this.svg.getScreenCTM(); // Current Transformation Matrix
-		// Invert the SVG->screen transformation
-		if (evt.touches) { evt = evt.touches[0]; }
-		return {
-			x: (evt.clientX - CTM.e) / CTM.a,
-			y: (evt.clientY - CTM.f) / CTM.d
-		};
-	}
-	
 	// -- handle click, drag, end drag
-
+	
 	doOnClick(evt) {
 		// -- act depending on tool
 		switch (GlobalState.tool) {
@@ -386,6 +437,9 @@ class mySVG {
 				break;
 			case Tool.Connect:
 				//
+				break;
+			case Tool.Free:
+				this.freeClick(evt);
 				break;
 			default:
 				break;
@@ -407,6 +461,9 @@ class mySVG {
 			case Tool.Connect:
 				//
 				break;
+			case Tool.Free:
+				this.freeDrag(evt);
+				break;
 			default:
 				break;
 		}
@@ -427,10 +484,86 @@ class mySVG {
 			case Tool.Connect:
 				//
 				break;
+			case Tool.Free:
+				this.freeEndDrag(evt);
+				break;
 			default:
 				break;
 		}
 		// this.selectedElement = null;
+	}
+	
+	// -- free
+	
+	unselectPoint() {
+		if (this.selectedPoint) {
+			const svgElement = this.selectedPoint.element;
+			let classString = svgElement.getAttributeNS(null, "class");
+			classString = classString.replaceAll(" selectedPoint", "");
+			svgElement.setAttributeNS(null, "class", classString);
+			this.selectedPoint = null;
+		}
+	}
+	
+	selectPoint(pt) {
+		this.unselectPoint();
+		this.selectedPoint = pt;
+		const svgElement = pt.element;
+		let classString = svgElement.getAttributeNS(null, "class");
+		if (!classString.includes("selectedPoint")) {
+			svgElement.setAttributeNS(null, "class", classString+" selectedPoint");
+		}
+	}	
+	
+	freeClick(evt) {
+		// -- save click position
+		this.lastMousePos = this.getMousePosition(evt);
+
+		if (evt.buttons & MouseButton.Left) {
+			// -- click on background
+			if (evt.target.id == 'background' && this.selectedPoint) {
+				this.unselectAll();
+				// -- create point at mouse position
+				let pos = this.getMousePosition(evt);
+				let pt;
+				// -- connect to last free point
+				// if (this.selectedPoint) {
+					pt = DependingPoint.new(this.elements, this.lineGroup, this.pointGroup, this.selectedPoint, pos, 4);
+				// }
+				this.points.push(pt);
+				// -- select created point
+				this.selectPoint(pt);
+				
+				// -- click on draggable element
+				// evt.target.classList.contains('draggable')
+			} else if (['draggable', 'point'].every(className => evt.target.classList.contains(className))) {
+				// -- Select the clicked element
+				this.selectPoint(this.elements[evt.target.id]);
+			} else {
+				this.unselectPoint();
+			}
+		} else if (evt.buttons & MouseButton.Right) {
+			this.unselectPoint();
+			console.log(this.points);
+		}
+	}
+	
+	freeDrag(evt) {
+		if (evt.buttons & MouseButton.Left) {
+			if (this.selectedPoint) {
+				evt.preventDefault();
+				let pos = this.getMousePosition(evt);
+				let x = pos.x - this.lastMousePos.x;
+				let y = pos.y - this.lastMousePos.y;
+				this.lastMousePos = pos; // update last mouse position
+				// -- drag object(s)
+				this.selectedPoint.moveBy(x, y);
+			}
+		}
+	}
+	
+	freeEndDrag(evt) {
+		
 	}
 	
 	// -- main tool
@@ -571,11 +704,10 @@ class mySVG {
 		if (!classString.includes("selected")) {
 			svgElement.setAttributeNS(null, "class", classString+" selected");
 		}
-		// console.log(this.selected);
 	}
 	
 	addSelectRectangle() {
-		let rect = $(document.createElementNS(xmlns, 'rect')).appendTo(this.$svg).attr({
+		let rect = $(document.createElementNS(xmlns, 'rect')).attr({
 			class: 'selectRectangle',
 			id: 'selectRectangle',
 			x: 0,
@@ -583,7 +715,7 @@ class mySVG {
 			width: 0,
 			height: 0,
 			visibility: "visible"
-		}); //width: this.$svg.attr('width'), height: this.$svg.attr('height')
+		}).appendTo(this.$svg); //width: this.$svg.attr('width'), height: this.$svg.attr('height')
 		return rect;
 	};
 	
@@ -645,14 +777,47 @@ class mySVG {
 		this.dragStart = null;
 	}
 	
-	// -- connect
 	
+	// -- GENERAL
+	
+	addBackground() {
+		let bg = $(document.createElementNS(xmlns, 'rect')).appendTo(this.$svg).attr({
+			class: 'background',
+			id: 'background',
+			width: '100%',
+			height: '100%'
+		});
+		return bg;
+	};
+	
+	makeInteractive() {
+		// mouse events
+		this.svg.addEventListener('mousedown', this.doOnClick.bind(this));
+		this.svg.addEventListener('mousemove', this.doOnDrag.bind(this));
+		this.svg.addEventListener('mouseup',  this.doOnEndDrag.bind(this));
+		this.svg.addEventListener('mouseleave', this.doOnEndDrag.bind(this));
+		// touch events
+		this.svg.addEventListener('touchstart', this.doOnClick.bind(this));
+		this.svg.addEventListener('touchmove', this.doOnDrag.bind(this));
+		this.svg.addEventListener('touchend', this.doOnEndDrag.bind(this));
+		this.svg.addEventListener('touchleave', this.doOnEndDrag.bind(this));
+		this.svg.addEventListener('touchcancel', this.doOnEndDrag.bind(this));
+		// avoid right click context menu
+		this.svg.addEventListener("contextmenu", e => e.preventDefault());
+	}
+	
+	// -- get mouse position in SVG coordinates
+	getMousePosition(evt) {
+		var CTM = this.svg.getScreenCTM(); // Current Transformation Matrix
+		// Invert the SVG->screen transformation
+		if (evt.touches) { evt = evt.touches[0]; }
+		return {
+			x: (evt.clientX - CTM.e) / CTM.a,
+			y: (evt.clientY - CTM.f) / CTM.d
+		};
+	}
 	
 }
-
-
-
-
 
 
 /* TESTS */
@@ -703,244 +868,6 @@ class mySVG {
 
 // console.log(A.instanceNumber);
 // console.log(B.instanceNumber);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*************************************************
- *      InteractiveSVG
- *  Main object for the whole SVG.
- * Everything is inside here
-**************************************************/
-
-var InteractiveSVG = (function() {
-	// Initialize(?) InteractiveSVG
-	var InteractiveSVG = function($container, width, height, name) {
-		// -- create html element <svg>
-		this.$svg = $(document.createElementNS(xmlns, 'svg'));
-		// -- set html attributes and append element to $container
-		this.$svg.attr({
-			xmlns: xmlns,
-			class: 'interactiveSVG',
-			onmouseenter: 'selectSVG(evt)',
-			id: name
-		}).appendTo($container);
-		this.$svg[0].setAttribute("viewBox", "0 0 " + (width || 100).toString() + ' ' + (height || 100).toString()); // can't use .attr for uppercase letters
-		
-		// -- InteractiveSVG member variables
-		this.elements = {};
-		this.selected = false;
-		
-		this._addMouseEventHandlers();
-		this.$background = this._addBackground();
-		// alert(this.$svg[0].id);
-		// makeInteractive({target:this.$svg[0]});
-	};
-
-	// Call this to create a new InteractiveSVG
-	InteractiveSVG.create = function(id, width, height, name) {
-		var $container = $('#' + id);
-		if (!$container) {
-			console.error("No element found with id " + id);
-			return;   
-		}
-		return new InteractiveSVG($container, width, height, name);
-	};
-	
-	// Add background to the InteractiveSVG
-	InteractiveSVG.prototype._addBackground = function() {
-		return this.addElement('rect').attr({
-			class: 'background',
-			id: 'background',
-			width: '100%',
-			height: '100%'
-		}); //width: this.$svg.attr('width'), height: this.$svg.attr('height')
-	};
-	
-	// What to do with mouse events clicking on the InteractiveSVG (?)
-	InteractiveSVG.prototype._addMouseEventHandlers = function() {
-		var self = this;
-
-		this.$svg.on('mousemove', function(evt) {
-			if (self.selected) {
-				evt.preventDefault();
-
-				// Get dragging to work on touch device
-				if (evt.type === 'touchmove') { evt = evt.touches[0]; }
-
-				// Move based on change in mouse position
-				self.selected.translate(
-					evt.clientX - self.dragX,
-					evt.clientY - self.dragY
-				);
-
-				// Update mouse position
-				self.dragX = evt.clientX;
-				self.dragY = evt.clientY;
-			}
-		});
-
-		this.$svg.on('mouseup', function() {
-				self.selected = false;
-		});
-	};
-	
-	// What to do with mouse events clicking on an element (?)
-	InteractiveSVG.prototype._setAsDraggable = function(element) {
-		var self = this;
-		element.$element.on('mousedown', function(evt) {
-			self.selected = element;
-
-			// Get dragging to work on touch device
-			if (evt.type === 'touchstart') { evt = evt.touches[0]; }
-			self.dragX = evt.clientX;
-			self.dragY = evt.clientY;
-		});
-	};
-	
-	// Add a new SVG element of type "tagName"
-	InteractiveSVG.prototype.addElement = function(tagName) {
-		return $(document.createElementNS(xmlns, tagName)).appendTo(this.$svg);
-	};
-
-	
-	/*************************************************
-	 *      SVG Element Object
-	 *  A object that wraps an SVG element.
-	**************************************************/
-	
-	var SVGElement = function(svgObject, attributes, hiddenAttributes) {
-		this.svg = svgObject;
-		hiddenAttributes = ['static', 'label', 'draggable'].concat(hiddenAttributes || []);
-		
-		// Fake attributes that control other attributes
-		this.proxyAttributes = this.proxyAttributes || {};
-
-		// Map attributes that this object to list of objects that share that attribute
-		this.linkedAttributes = {};
-
-		// hiddenAttributes are attributes for the SVGElement object, but not for SVG element itself.
-		for (var i = 0; i < hiddenAttributes.length; i++) {
-			var attributeName = hiddenAttributes[i];
-			if (attributes[attributeName] !== undefined) {
-				this[attributeName] = attributes[attributeName];
-				delete attributes[attributeName];
-			}
-		}
-
-		this.update(attributes);
-
-		if (this.draggable) { svgObject._setAsDraggable(this); }
-
-		if (this.label) { svgObject.elements[this.label] = this; }
-	};
-	
-	// Update the object with a {key, value} map of attributes
-	SVGElement.prototype.update = function(attributes) {
-		// Update linked attributes
-		for (var attributeName in attributes) {
-			var value = attributes[attributeName];
-
-			this.updateAttribute(attributeName, value);
-
-			var linkedAttributes = this.linkedAttributes[attributeName];
-			if (linkedAttributes) {
-				for (var i = 0; i < linkedAttributes.length; i++) {
-					this.linkedAttributes[attributeName][i](value);
-				}
-			}
-		}
-	};
-	
-	// Update the object with one given attribute and value
-	SVGElement.prototype.updateAttribute = function(attributeName, value) {
-		// Update object attributes
-		this[attributeName] = value;
-
-		// Update SVG element attributes
-		if (this.proxyAttributes[attributeName]) {
-			this.proxyAttributes[attributeName](this.$element, value);
-		} else {
-			this.$element.attr(attributeName, value);
-		}
-	};
-	
-	// Update the object with a {key, value} map of attributes if not yet set
-	SVGElement.prototype._setAttrIfNotYetSet = function(attributes) {
-		var el = this.$element[0];
-		for (var attributeName in attributes) {
-			if (!el.hasAttribute(attributeName)) {
-				this.$element.attr(attributeName, attributes[attributeName]);
-			}
-		}
-	};
-	
-	SVGElement.prototype.translate = function(dx, dy) {
-		this.update({ x: this.x + dx, y: this.y + dy });
-	};
-
-	/*************************************************
-	 *      InteractivePoint
-	 *  An SVG circle which can be draggable.
-	**************************************************/
-
-	var InteractivePoint = function(svgObject, attributes) {
-		this.$element = svgObject.addElement('circle');
-		this.draggable = !attributes.static;
-		
-		// Changing this object's x and y attributes changes its element's cx and cy attributes
-		this.proxyAttributes = {
-			x: function(el, value) { el.attr('cx', value); },
-			y: function(el, value) { el.attr('cy', value); }
-		};
-
-		SVGElement.call(this, svgObject, attributes);
-	
-		// Set attributes
-		this._setAttrIfNotYetSet({
-			'r': this.draggable ? 6 : 3,
-			'class': this.draggable ? "draggable draggable-point" : "static-point"
-		});
-
-		// Set classes
-		this.$element.addClass("point");
-	};
-	InteractivePoint.prototype = Object.create(SVGElement.prototype);
-	
-	
-	return InteractiveSVG;
-})();
-
-
-
-
-
-
-
 
 
 
