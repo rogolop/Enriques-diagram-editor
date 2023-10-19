@@ -13,17 +13,20 @@
     .svg-wrapper {
         display: inline-block;  
     }
-</style>
+  </style>
 </head>
 
 
 
 <body>
   <button onClick="downloadInnerHtml('exp.svg', 'mainSVG', 'image/svg+xml')">Download</button>
+  <!-- <a href="#" id="downloadLink">Download the inner html</a> -->
+  
   <!-- <button onClick="toggleErasing()">Toggle erase</button> -->
   <input type="radio" name="tool" id="mainTool"  value="mainTool">
   <input type="radio" name="tool" id="eraser"    value="eraser">
   <input type="radio" name="tool" id="connector" value="connector">
+  
   <label for="mainTool" class="toolLabel mainTool">
     <span class="prevent-select">mainTool</span>
   </label>
@@ -33,9 +36,12 @@
   <label for="connector" class="toolLabel connector">
     <span class="prevent-select">connector</span>
   </label>
-  <!-- <a href="#" id="downloadLink">Download the inner html</a> -->
+  
   <!-- <input type="range" min="1" max="100" value="50" oninput="moveSlider(this, 'x')"/>
   <input type="range" min="1" max="100" value="50" oninput="moveSlider(this, 'y')"/> -->
+  
+  <br>
+  <br>
   
   <svg id="mainSVG" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100" onload="makeInteractive(evt)" onmouseenter="selectSVG(evt)">
     <rect id="background" width="100%" height="100%" fill="#eee">
@@ -59,7 +65,13 @@
   <script type="text/javascript">
     // Line example
     (function() {
-      var svg = InteractiveSVG.create('taco', 100, 100);
+      // var svg = InteractiveSVG.create('taco', 100, 100);
+      // var svg = InteractiveSVG.create('taco', 100, 100, 'potato');
+      var svg = new mySVG('taco', 100, 100);
+      var svg = new mySVG('taco', 100, 100, 'my');
+      var svg = new mySVG('taco', 100, 100);
+      var svg = new mySVG('taco', 100, 100);
+      console.log(svg.elements);
     //   var A = svg.addPoint({ x: 40, y: 75 });
     //   var B = svg.addPoint({ x: 160, y: 75 });
     //   svg.addLine({p1: A, p2: B});

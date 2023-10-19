@@ -1,4 +1,10 @@
+html * {
+  font-family: Arial, Helvetica, sans-serif;
+}
 
+body {
+  background-color: #36373a;
+}
 
 .static {
   cursor: not-allowed;
@@ -7,9 +13,16 @@
   cursor: move;
 } */
 
+svg {
+  max-width: 800px;
+}
 
 /*********************************************************************/
 
+
+.mySVG .background {
+  fill: #ffeeee; /* #f8f8f8; */
+}
 
 
 .interactiveSVG .background {
@@ -100,6 +113,21 @@
 
 
 
+button {
+  background: #5c5;
+  height: 2em;
+  width: 7em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-evenly;
+  margin: 0 0pt;
+  border-radius: 5px;
+  cursor: pointer;
+  padding: 0 10px;
+  border: 2px solid #8f8;
+  font-size: 15px;
+  color: black;
+}
 
 /**********************************/
 /*      Custom radio buttons      */
