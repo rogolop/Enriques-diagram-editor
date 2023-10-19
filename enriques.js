@@ -55,53 +55,58 @@ const lastPointTypes = [
 
 // Global state
 var initGlobalState = {
-	tool: Tool.Main
+	tool: Tool.Main,
+	mySVGs: []
 };
 var GlobalState = initGlobalState;
 
 // Selected <svg> element
 var activeSVG;
+var active_mySVG;
 
 function selectSVG(evt) {
 	if (activeSVG) {
 		activeSVG.classList.remove("activeSVG");
 	}
-	// $(activeSVG).attr({
-	// 	class: ""
-	// });
 	activeSVG = evt.target;
-	// $(activeSVG).attr({
-	// 	class: "activeSVG"
-	// });
 	activeSVG.classList.add("activeSVG");
-	// alert(activeSVG.id);
+	active_mySVG = GlobalState.mySVGs.find(function(mysvg) { return mysvg.svg.id == activeSVG.id});
 }
-
-// var moveSlider = function(slider, direction) {
-// 	var value = slider.value;
-// 	var circle = document.getElementById("target");
-// 	var coord = "c" + direction;
-// 	circle.setAttributeNS(null, coord, value);
-// }
 
 // Download html element with a given id (and its children)
 // Partial Source: https://stackoverflow.com/questions/22084698/how-to-export-source-content-within-div-to-text-html-file
-function downloadInnerHtml(filename, elId, mimeType) {
-	// var elHtml = document.getElementById(elId).outerHTML; //.innerHTML; // outerHTML inludes the html element itself, innerHTML only includes children
+function downloadInnerHtml(filename) {
+	var mimeType = 'image/svg+xml';
+	
+	// active_mySVG.hideToolGUI();
+	
+	// -- outerHTML inludes the html element itself, innerHTML only includes children
+	// var elHtml = document.getElementById(elId).outerHTML; //.innerHTML;
 	var elHtml = activeSVG.outerHTML;
 	
-	var cssString;
-	// cssString = $.get("/enr.css");
-	cssString = $.ajax({type: "GET", url: "/svg.css", async: false}).responseText;
-	
-	elHtml = elHtml.replace("</svg>", "<style>"+cssString+"</style></svg>");
-	
-	var link = document.createElement('a');
-	mimeType = mimeType || 'text/plain';
+	$.ajax({
+		url: "svg.css",
+		dataType: "text",
+		success: function(cssString) {
+			elHtml = elHtml.replace("</svg>", "<style>"+cssString+"</style></svg>");
+			
+			var link = document.createElement('a');
+			mimeType = mimeType || 'text/plain';
 
-	link.setAttribute('download', filename);
-	link.setAttribute('href', 'data:' + mimeType  +  ';charset=utf-8,' + encodeURIComponent(elHtml));
-	link.click(); 
+			link.setAttribute('download', filename);
+			link.setAttribute('href', 'data:' + mimeType  +  ';charset=utf-8,' + encodeURIComponent(elHtml));
+			link.click(); 
+		}
+	});
+	
+	// elHtml = elHtml.replace("</svg>", "<style>"+cssString+"</style></svg>");
+	
+	// var link = document.createElement('a');
+	// mimeType = mimeType || 'text/plain';
+
+	// link.setAttribute('download', filename);
+	// link.setAttribute('href', 'data:' + mimeType  +  ';charset=utf-8,' + encodeURIComponent(elHtml));
+	// link.click(); 
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -390,6 +395,8 @@ class mySVG {
 		}
 		activeSVG = this.svg;
 		activeSVG.classList.add("activeSVG");
+		active_mySVG = this;
+		GlobalState.mySVGs.push(this);
 		
 		// -- all "myElement"s
 		this.elements = {}; // id -> myElement
@@ -940,7 +947,7 @@ class mySVG {
 	
 	createSelectionRectangle() {
 		let $rect = $(document.createElementNS(xmlns, 'rect')).attr({
-			class: 'selectRectangle',
+			class: 'selectRectangle gui',
 			id: 'selectRectangle',
 			x: 0,
 			y: 0,
@@ -983,6 +990,12 @@ class mySVG {
 		pt = this.createFreePoint(pt.id, {x: 110, y: 20});
 		pt = this.createFreePoint(pt.id, {x: 130, y: 20});
 	}
+	
+	// hideToolGUI() {
+	// 	this.movingAnElement = false;
+	// 	this.unselectAll();
+	// 	this.stopSelectionInRectangle();
+	// }
 	
 	// -- get mouse position in SVG coordinates
 	getMousePosition(evt) {
