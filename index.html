@@ -5,7 +5,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Enriques diagram generator</title>
 	
-	<link rel="icon" type="image/ico" href="cusp.ico">
+	<link rel="icon" type="image/ico" href="siteLogo/cusp.ico">
 	<!-- <link rel="stylesheet" type="text/css" href="svg.css"> -->
 	<link rel="stylesheet" type="text/css" href="style.css">
 
@@ -18,36 +18,34 @@
 		<div id="start">
 			<a id="site-link" href="/" title="Enriques diagram generator">
 				<div id="logo-icon">
-					<img id="site-logo" src="cusp.svg" alt="cusp.svg" focusable="false" class="not-selectable">
-				</div>
-				<span id="site-span" class="not-selectable">Enriques diagram generator</span>
+					<img id="site-logo" src="siteLogo/cusp.svg" alt="siteLogo/cusp.svg" focusable="false" class="not-selectable" style="border-radius: 3px">
+				</div
+				><span id="site-span">Enriques diagram generator</span>
 			</a>
 		</div>
 	</header>
 	
 	<div class="toolbar">
 		<button id="downloadButton" onClick="downloadInnerHtml('diagram.svg')" class="toolLabel not-selectable">
-			Download
-		</button>
-		
-		<input type="radio" name="tool" id="mainTool" value="mainTool">
-		<label for="mainTool" class="toolLabel not-selectable">
-			mainTool
-		</label>
-		
-		<input type="radio" name="tool" id="free" value="free">
-		<label for="free" class="toolLabel not-selectable">
-			free
-		</label>
-		
-		<input type="radio" name="tool" id="select" value="select">
-		<label for="select" class="toolLabel not-selectable">
-			select
-		</label>
-		
-		<input type="radio" name="tool" id="eraser" value="eraser">
-		<label for="eraser" class="toolLabel not-selectable">
-			eraser
+			<span style="margin-right: 5px;">Download</span>
+			<img src = "tools/download.svg" alt="tools/download.svg"/>
+		</button
+		><div class="vl"></div
+		><input type="radio" name="tool" id="mainTool" value="mainTool"
+		><label for="mainTool" class="toolLabel not-selectable">
+			<img src = "tools/main.svg" alt="tools/main.svg"/>
+		</label
+		><input type="radio" name="tool" id="select" value="select"
+		><label for="select" class="toolLabel not-selectable">
+			<img src = "tools/select.svg" alt="tools/select.svg"/>
+		</label
+		><input type="radio" name="tool" id="eraser" value="eraser"
+		><label for="eraser" class="toolLabel not-selectable">
+			<img src = "tools/eraser.svg" alt="tools/eraser.svg"/>
+		</label
+		><input type="radio" name="tool" id="free" value="free"
+		><label for="free" class="toolLabel not-selectable">
+			<img src = "tools/free.svg" alt="tools/free.svg"/>
 		</label>
 	</div>
 	

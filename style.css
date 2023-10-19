@@ -9,19 +9,23 @@ html * {
 :root {
 	--text-color: #ffffff;
 	--background-color: #36373a;
-	--primary-color: #1c57a8;
-	--secondary-color: #e0dad0;
-	--accent-color: #2d7a2d;
+	--primary-color: #F1F1F1;
+	/* #1c55a6; */
+	--secondary-color: #212224;
+	/* #e0dad0; */
+	--accent-color: #6dacfe;
+	/* #2d7a2d; */
 	
-	--background-color-darker: #212224;
+	--background-color-darker: var(--secondary-color);
+	/* #212224; */
 	--text-color-inverted: #000000;
-	--accent-color-lighter: #64a564; /*#44b844; */
+	/* --accent-color-lighter: #64a564; */
+	/*#44b844; */
 	
 	--svg-transparent-dark-color: #00000020;
 	--svg-transparent-light-color: #ffffff20;
 	--svg-selected-color: var(--accent-color);
-	--svg-selectedPoint-color: #58d0d4;
-	--svg-deletePoint-color: #c00000;
+	--svg-deletePoint-color: #c82e2e;
 }
 
 body {
@@ -111,67 +115,103 @@ div {
 	/* overflow: hidden; */
 	position: sticky;
 	display: block;
+	gap: 5px;
 	top: 56px;
 	width: 100%;
 	height: fit-content;
 	z-index: 10;
 	background-color: var(--background-color);
 	border: solid var(--background-color-darker);
-	border-width: 0 0 2px 0;
+	border-width: 0 0 3px 0;
+	padding: 5px 20px;
 }
 
 /* Style the links inside the navigation bar */
-.toolbar button {
+/* .toolbar button { */
 	/* float: left; */
 	/* color: var(--primary-color);  */
 	/* #f2f2f2; */
 	/* text-align: center; */
 	/* padding: 15px 15px; */
 	/* font-size: 17px; */
-	border: none;
+	/* border: none; */
 	/* text-decoration: none; */
 	/* display: inline-block; */
 	/* margin: auto; */
-	box-sizing: content-box;
+	/* box-sizing: content-box; */
 	/* box-sizing: border-box; */
 	/* height: 50px; */
-}
+/* } */
 
 #downloadButton {
 	background: var(--accent-color);
-	color: var(--text-color)
+	color: var(--text-color-inverted);
+	border: 3px solid var(--accent-color);
+	/* margin: 0 15px 0 0; */
+	gap: 0;
+	padding: 0 10px;
+}
+
+#downloadButton:hover {
+	/* background: var(--accent-color-lighter); */
+	border: 3px solid var(--primary-color);
+}
+
+#downloadButton:active {
+	background: var(--primary-color);
+}
+/* 
+.toolbar button {
+	background: var(--accent-color);
+	color: var(--text-color-inverted);
+	border: 3px solid var(--accent-color);
+} */
+
+.vl {
+	display: inline-flex;
+	border-left: 3px solid var(--background-color-darker);
+	vertical-align: top;
+	height: 40px;
+	margin: 0 10px;
 }
 
 /*      Custom radio buttons      */
 .toolLabel {
-	background: var(--secondary-color);
-	height: 2em;
-	width: 5em;
+	/* background: var(--secondary-color); */
+	height: 40px;
+	min-width: 40px;
 	display: inline-flex;
 	align-items: center;
 	justify-content: space-evenly;
-	margin: 0 3pt;
+	vertical-align: top;
 	border-radius: 5px;
 	cursor: pointer;
-	padding: 0 10px;
+	padding: 0;
 	/* border: 2px solid lightgrey; */
-	transition: all 0.3s ease;
+	border: 3px solid var(--background-color);
+	/* transition: all 0.3s ease; */
+	box-sizing: border-box;
+	font-size: 20px;
+	color: var(--text-color);
+	/* var(--text-color-inverted); */
+	margin: 0;
 }
 
-.toolLabel span {
-	font-size: 20px;
-	color: var(--text-color-inverted);
-}
+/* .toolLabel span { */
+	/* margin: 0 10px; */
+	/* font-size: 20px; */
+	/* color: var(--text-color-inverted); */
+/* } */
 
-.toolLabel {
-	font-size: 20px;
-	color: var(--text-color-inverted);
-	margin: 5px 0 5px 5px;
+.toolLabel:hover {
+	border: 3px solid var(--background-color-darker);
+	/* transition: all 0s ease; */
 }
 
 input[type=radio]:checked + label {
-	border-color: var(--primary-color);
-	background: var(--primary-color);
+	border-color: var(--background-color-darker);
+	background: var(--background-color-darker);
+	/* var(--primary-color); */
 	color: var(--text-color);
 	transition: all 0.3s ease;
 }
@@ -179,6 +219,13 @@ input[type=radio]:checked + label {
 input[type="radio"] {
 	display: none;
 }
+
+.toolLabel > img {
+	height: 25px;
+}
+
+
+
 
 
 /**********************************/
@@ -209,11 +256,11 @@ svg {
 }
 
 .activeSVG {
-	border: 3pt solid var(--accent-color-lighter);
+	border: 3pt solid var(--accent-color);
 }
 
 .background {
-	fill: var(--secondary-color); /* #ffeeee; #f8f8f8; */
+	fill: var(--primary-color); /* #ffeeee; #f8f8f8; */
 }
 
 /* selection tool */

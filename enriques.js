@@ -111,7 +111,7 @@ function downloadInnerHtml(filename) {
 
 /////////////////////////////////////////////////////////////////////
 
-// When the page has completed loading
+// When the page has completed loading (jQuery ready() function)
 $(function() {
 	// Initialize radio buttons "tool"
 	$('input:radio[name=tool]').val([initGlobalState.tool]);
