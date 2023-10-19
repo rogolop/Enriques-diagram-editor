@@ -1,3 +1,5 @@
+// alert("Hello! I am an alert box!!");
+
 var svg;
 
 // Boundary for object with class "confine"
@@ -6,15 +8,53 @@ var boundaryX2 = 50;
 var boundaryY1 = 50;
 var boundaryY2 = 90;
 
+var GlobalState = {
+  tool: 'mainTool'
+}
+
+var primaryMouseButtonDown = false;
+
+
+
+
+
+function selectSVG(evt) {
+  svg = evt.target;
+  // alert(svg.id);
+}
+
+
+
+
+
+
 // Things to do once the window loads
 window.addEventListener("load", function() {
   // Code to be executed once the window is loaded (=> once the svg exists?)
   
   // console.log("first");
-  svg = document.getElementById('mainSVG');
+  // svg = document.getElementById('mainSVG');
   // console.log(svg);
   
   var item = document.getElementById('item');
+  
+  
+  
+  
+  // Know mouse state
+
+  primaryMouseButtonDown = false;
+
+  function setPrimaryButtonState(evt) {
+    var flags = evt.buttons !== undefined ? evt.buttons : evt.which;
+    primaryMouseButtonDown = (flags & 1) === 1;
+  }
+  
+  document.addEventListener("mousedown", setPrimaryButtonState);
+  document.addEventListener("mousemove", setPrimaryButtonState);
+  document.addEventListener("mouseup", setPrimaryButtonState);
+  
+  
   
 
   
@@ -80,15 +120,15 @@ var moveSlider = function(slider, direction) {
 }
 
 function makeInteractive(evt) {
-  var svg = evt.target;
-  svg.addEventListener('mousedown', startDrag);
-  svg.addEventListener('mousemove', drag);
+  svg = evt.target;
+  svg.addEventListener('mousedown', doOnMouseDown);
+  svg.addEventListener('mousemove', doOnMouseDrag);
   svg.addEventListener('mouseup', endDrag);
   svg.addEventListener('mouseleave', endDrag);
   
   // For touch
-  svg.addEventListener('touchstart', startDrag);
-  svg.addEventListener('touchmove', drag);
+  svg.addEventListener('touchstart', doOnMouseDown);
+  svg.addEventListener('touchmove', doOnMouseDrag);
   svg.addEventListener('touchend', endDrag);
   svg.addEventListener('touchleave', endDrag);
   svg.addEventListener('touchcancel', endDrag);
@@ -117,7 +157,7 @@ function makeInteractive(evt) {
   // }
 
   
-  // Better versions of startDrag() and drag() using transform (still does not work with gropus and foreignObjects)
+  
   
   // Get mouse position in the SVG coordinate system
   function getMousePosition(evt) {
@@ -130,28 +170,28 @@ function makeInteractive(evt) {
     };
   }
 
-  function startDrag(evt) {
-    if (evt.target.id == 'background') {
+  // Better versions of startDrag() and drag() using transform (still does not work with gropus and foreignObjects)
+  function doOnMouseDown(evt) {
+    
+    if (GlobalState.tool == 'mainTool' && evt.target.id == 'background') {
+      // Create circle
       var element = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
       var coord = getMousePosition(evt);
       element.setAttributeNS(null, 'cx', coord.x);
       element.setAttributeNS(null, 'cy', coord.y);
-      element.setAttributeNS(null, 'r', 1.5);
+      element.setAttributeNS(null, 'r', 2.5);
       element.setAttributeNS(null, 'class', 'draggable');
+      // alert(svg.id);
       svg.appendChild(element);
       selectedElement = element;
     } else if (evt.target.classList.contains('draggable')) {
       selectedElement = evt.target;
     } else {
-      selectedElement = null
+      selectedElement = null;
     }
     
-    
-    if (selectedElement) {
-      
-      
+    if (GlobalState.tool == 'mainTool' && selectedElement) {
       // For confined objects
-      
       confined = selectedElement.classList.contains('confine');
       if (confined) {
         bbox = selectedElement.getBBox();
@@ -179,11 +219,20 @@ function makeInteractive(evt) {
       transform = transforms.getItem(0);
       offset.x -= transform.matrix.e;
       offset.y -= transform.matrix.f;
+      
+    } else if (GlobalState.tool == 'eraser' && selectedElement) {
+      selectedElement.parentNode.removeChild(selectedElement);
+      selectedElement = null;
+      
+    } else if (GlobalState.tool == 'connector' && selectedElement) {
+      //
     }
+
+
   }
 
-  function drag(evt) {
-    if (selectedElement) {
+  function doOnMouseDrag(evt) {
+    if (GlobalState.tool == 'mainTool' && selectedElement) {
       evt.preventDefault();
       var coord = getMousePosition(evt);
       
@@ -198,6 +247,16 @@ function makeInteractive(evt) {
         else if (dy > maxY) { dy = maxY; }
       }
       transform.setTranslate(dx, dy);
+      
+    } else if (GlobalState.tool == 'eraser') {
+      if (primaryMouseButtonDown && evt.target.classList.contains('draggable')) {
+        selectedElement = evt.target;
+        selectedElement.parentNode.removeChild(selectedElement);
+        selectedElement = null;
+      }
+      
+    } else if (GlobalState.tool == 'connector' && selectedElement) {
+      //
     }
   }
   
@@ -219,6 +278,33 @@ function downloadInnerHtml(filename, elId, mimeType) {
   link.click(); 
 }
 
+
+
+
+/////////////////////////////////////////////////////////////////////
+
+// When document is loaded
+$(document).ready(function() {
+  
+  // Initialize radio buttons "tool"
+  $('input:radio[name=tool]').val(['mainTool']);
+  
+  // Function called when radio buttons "tool" change value
+  $('input[type=radio][name=tool]').change(function() {
+    if (this.value == 'mainTool') {
+      GlobalState.tool = 'mainTool';
+    } else if (this.value == 'eraser') {
+      GlobalState.tool = 'eraser';
+    } else if (this.value == 'connector') {
+      GlobalState.tool = 'connector';
+    }
+  });
+  
+  
+});
+
+
+
 ////////////////////////////////////////////////////////////////////
 
 var InteractiveSVG = (function() {
@@ -235,14 +321,17 @@ var InteractiveSVG = (function() {
     this.$svg.attr({
       xmlns: xmlns,
       class: 'interactiveSVG',
-      width: width || 400,
-      height: height || 400,
+      onmouseenter: 'selectSVG(evt)',
+      id: 'weeee',
     }).appendTo($container);
+    this.$svg[0].setAttribute("viewBox", "0 0 " + (width || 100).toString() + ' ' + (height || 100).toString()); // can't use .attr for uppercase letters
 
     this.elements = {};
     this.selected = false;
     this._addMouseEventHandlers();
     this.$background = this._addBackground();
+    // alert(this.$svg[0].id);
+    makeInteractive({target:this.$svg[0]});
   };
 
   // Call this to create a new InteractiveSVG
@@ -259,9 +348,10 @@ var InteractiveSVG = (function() {
   InteractiveSVG.prototype._addBackground = function() {
     return this.addElement('rect').attr({
       class: 'background',
-      width: this.$svg.attr('width'),
-      height: this.$svg.attr('height')
-    });
+      id: 'background',
+      width: '100%',
+      height: '100%'
+    }); //width: this.$svg.attr('width'), height: this.$svg.attr('height')
   };
   
   // What to do with mouse events clicking on the InteractiveSVG (?)
@@ -417,4 +507,13 @@ var InteractiveSVG = (function() {
   
   return InteractiveSVG;
 })();
+
+
+
+
+
+
+
+
+
 

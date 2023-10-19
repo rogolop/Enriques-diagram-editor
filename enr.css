@@ -13,7 +13,7 @@
 
 
 .interactiveSVG .background {
-  fill: #f8f8f8;
+  fill: #eeffee; /* #f8f8f8; */
 }
 
 /*  Elements can be points (filled) or lines */
@@ -37,6 +37,16 @@
 
 .draggable {
   cursor: pointer
+}
+
+.draggable:hover {
+  /* fill: none; */
+  stroke: #00000020;
+  stroke-width: 2pt;
+  /* stroke-dasharray: 2,2; */
+  stroke-linejoin: round;
+  paint-order: stroke;
+  /* outline: 1pt dashed #00000030; */
 }
 
 .interactiveSVG .draggable-point {
@@ -86,4 +96,68 @@
   stroke-width: 1px;
   pointer-events: none;
 }
+
+
+
+
+
+/**********************************/
+/*      Custom radio buttons      */
+/**********************************/
+
+.toolLabel {
+  background: #fff;
+  height: 2em;
+  width: 7em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-evenly;
+  margin: 0 3pt;
+  border-radius: 5px;
+  cursor: pointer;
+  padding: 0 10px;
+  border: 2px solid lightgrey;
+  transition: all 0.3s ease;
+}
+
+#mainTool:checked:checked ~ .mainTool,
+#eraser:checked:checked ~ .eraser,
+#connector:checked:checked ~ .connector {
+  border-color: #0069d9;
+  background: #0069d9;
+}
+
+.toolLabel span{
+  font-size: 20px;
+  color: black;
+}
+
+#mainTool:checked:checked ~ .mainTool span,
+#eraser:checked:checked ~ .eraser span,
+#connector:checked:checked ~ .connector span {
+  color: white;
+  transition: all 0.3s ease;
+}
+
+input[type="radio"]{
+  display: none;
+}
+
+
+
+
+
+/* Prevent text(?) selection */
+.prevent-select {
+  -webkit-user-select: none; /* Safari */
+  -ms-user-select: none; /* IE 10 and IE 11 */
+  user-select: none; /* Standard syntax */
+}
+
+
+
+
+
+
+
 
