@@ -138,10 +138,6 @@ svg {
   fill: var(--svg-selected-color);
 }
 
-.point.selectedPoint {
-  fill: var(--svg-selectedPoint-color);
-}
-
 .point.draggable:hover {
   /* fill: none; */
   stroke: var(--svg-transparent-dark-color);

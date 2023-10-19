@@ -38,11 +38,11 @@
   <label for="free" class="toolLabel">
     <span class="prevent-select">free</span>
   </label>
-  <label for="eraser" class="toolLabel">
-    <span class="prevent-select">eraser</span>
-  </label>
   <label for="select" class="toolLabel">
     <span class="prevent-select">select</span>
+  </label>
+  <label for="eraser" class="toolLabel">
+    <span class="prevent-select">eraser</span>
   </label>
   <label for="connect" class="toolLabel">
     <span class="prevent-select">connect</span>
@@ -55,14 +55,14 @@
   <br>
   <br>
   
-  <!-- <div id="taco" class="svg-wrapper" style="width: 100%"></div> -->
+  <!-- <div id="taco" class="svg-wrapper" style="width: 50%"></div> -->
   <div id="taco" class="svg-wrapper"></div>
   
   <script type="text/javascript">
     // (function() {
-      var svg = new mySVG('taco', 200, 100, 'svggg');
-      // svg.svg.setAttribute("height", "100px");
-      
+      var svggg = new mySVG(200, 100, 'taco', 'svggg');
+      svggg.svg.setAttribute("height", "250px");
+      // alert(svggg.distance2({x:0, y:0}, {x:1, y:1}));
       // var svg = new mySVG('taco', 100, 100);
       // console.log(svg.elements);
     // })();
