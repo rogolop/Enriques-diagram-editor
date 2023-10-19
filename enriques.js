@@ -9,7 +9,8 @@ const Tool = {
 	Main: "mainTool",
 	Eraser: "eraser",
 	Select: "select",
-	Free: "free"
+	Free: "free",
+	CurveEdit: "curveEdit"
 };
 const Tools = Object.keys(Tool).map(function(key){return Tool[key];});
 
@@ -24,6 +25,7 @@ const MouseButton = {
 const ObjectTypes = {
 	Point: "Point",
 	Line: "Line",
+	Curve: "Curve",
 	BasePoint: "BasePoint",
 	LastFreePoint: "LastFreePoint",
 	LastSatellitePoint: "LastSatellitePoint",
@@ -55,7 +57,7 @@ const lastPointTypes = [
 
 // Global state
 var initGlobalState = {
-	tool: Tool.Main,
+	tool: Tool.CurveEdit,
 	mySVGs: []
 };
 var GlobalState = initGlobalState;
@@ -114,7 +116,7 @@ function downloadInnerHtml(filename) {
 // When the page has completed loading (jQuery ready() function)
 $(function() {
 	// Initialize radio buttons "tool"
-	$('input:radio[name=tool]').val([initGlobalState.tool]);
+	$('input[type=radio][name=tool]').val([initGlobalState.tool]);
 	
 	// Function called when radio buttons "tool" change value
 	$('input[type=radio][name=tool]').change(function() {
@@ -155,7 +157,7 @@ class myElement {
 	}
 	
 	get position() {
-		return this.pos;
+		return {...this.pos};
 	}
 	
 	set position(_pos) {
@@ -238,27 +240,23 @@ class Line extends myElement {
 		this.pos1 = _pos1;
 		this.pos2 = _pos2;
 		this.pos = this.center();
-		this.element = this.createLine(_pos1, _pos2, true);
+		this.element = this.createLine();
 		this.type = ObjectTypes.Line;
 	}
 	
-	get position1() {
-		return this.pos1;
-	}
+	get position1() { return {...this.pos1}; }
 	
-	get position2() {
-		return this.pos1;
-	}
+	get position2() { return {...this.pos2};	}
 	
 	set position1(_pos1) {
-		this.pos1 = _pos1;
+		this.pos1 = {..._pos1};
 		this.pos = this.center();
 		this.element.setAttributeNS(null, 'x1', this.pos1.x);
 		this.element.setAttributeNS(null, 'y1', this.pos1.y);
 	}
 	
 	set position2(_pos2) {
-		this.pos2 = _pos2;
+		this.pos2 = {..._pos2};
 		this.pos = this.center();
 		this.element.setAttributeNS(null, 'x2', this.pos2.x);
 		this.element.setAttributeNS(null, 'y2', this.pos2.y);
@@ -271,7 +269,7 @@ class Line extends myElement {
 		};
 	}
 	
-	createLine(pos1, pos2, draggable) {
+	createLine() {
 		let element = document.createElementNS(xmlns, 'line');
 		element.setAttributeNS(null, 'id', this.id);
 		element.setAttributeNS(null, 'x1', this.pos1.x);
@@ -280,11 +278,7 @@ class Line extends myElement {
 		element.setAttributeNS(null, 'y2', this.pos2.y);
 		element.setAttributeNS(null, 'stroke', "black"); // necessary
 		element.setAttributeNS(null, 'stroke-width', 1.5);
-		if (draggable) {
-			element.setAttributeNS(null, 'class', 'line draggable');
-		} else {
-			element.setAttributeNS(null, 'class', 'line');
-		}
+		element.setAttributeNS(null, 'class', 'line draggable');
 		element = this.svg.appendChild(element);
 		return element;
 	}
@@ -304,6 +298,108 @@ class Line extends myElement {
 	
 	moveTo(x, y) {
 		this.moveBy(x-this.pos.x, y-this.pos.y);
+	}
+}
+
+class Curve extends myElement {
+	static instanceNumber = 0;
+	static newID() {
+		let n = Curve.instanceNumber;
+		Curve.instanceNumber++;
+		return n;
+	}
+	
+	static new(_elements, _svg, _pos1, _posC1, _posC2, _pos2) {
+		let curve = new Curve(_svg, _pos1, _posC1, _posC2, _pos2);
+		_elements[curve.id] = curve;
+		return curve;
+	}
+	
+	constructor(_svg, _pos1, _posC1, _posC2, _pos2) {
+		super(_svg, "curve"+Curve.newID(), _pos1); // _pos1 is temporary
+		this.pos1 = _pos1;
+		this.posC1 = _posC1;
+		this.posC2 = _posC2;
+		this.pos2 = _pos2;
+		this.pos = this.center();
+		this.element = this.createCurve();
+		this.type = ObjectTypes.Curve;
+	}
+	
+	get position1() { return {...this.pos1}; }
+	
+	get position2() { return {...this.pos2};	}
+
+	get positionC1() { return {...this.posC1}; }
+	
+	get positionC2() { return {...this.posC2}; }
+	
+	set position1(_pos1) {
+		this.pos1 = {..._pos1};
+		this.pos = this.center();
+		this.element.setAttributeNS(null, 'd', this.getPathString());
+	}
+	
+	set position2(_pos2) {
+		this.pos2 = {..._pos2};
+		this.pos = this.center();
+		this.element.setAttributeNS(null, 'd', this.getPathString());
+	}
+	
+	set positionC1(_posC1) {
+		this.posC1 = {..._posC1};
+		this.element.setAttributeNS(null, 'd', this.getPathString());
+	}
+	
+	set positionC2(_posC2) {
+		this.posC2 = {..._posC2};
+		this.element.setAttributeNS(null, 'd', this.getPathString());
+	}
+
+	center() {
+		return {
+			x: 1/8*this.pos1.x + 3/8*this.posC1.x +
+				3/8*this.posC2.x + 1/8*this.pos2.x,
+			y: 1/8*this.pos1.y + 3/8*this.posC1.y +
+				3/8*this.posC2.y + 1/8*this.pos2.y
+		};
+	}
+	
+	createCurve() {
+		let element = document.createElementNS(xmlns, 'path');
+		element.setAttributeNS(null, 'id', this.id);
+		element.setAttributeNS(null, 'd', this.getPathString());
+		element.setAttributeNS(null, 'stroke', "black"); // necessary
+		element.setAttributeNS(null, 'stroke-width', 1.5);
+		element.setAttributeNS(null, "fill-opacity", 0);
+		element.setAttributeNS(null, 'class', 'curve draggable');
+		element = this.svg.appendChild(element);
+		return element;
+	}
+	
+	moveBy(dx, dy) {
+		this.pos.x += dx;
+		this.pos.y += dy;
+		this.pos1.x += dx;
+		this.pos1.y += dy;
+		this.pos2.x += dx;
+		this.pos2.y += dy;
+		this.posC1.x += dx;
+		this.posC1.y += dy;
+		this.posC2.x += dx;
+		this.posC2.y += dy;
+		this.element.setAttributeNS(null, 'd', this.getPathString());
+	}
+	
+	moveTo(x, y) {
+		this.moveBy(x-this.pos.x, y-this.pos.y);
+	}
+	
+	getPathString() {
+		return "M " + this.pos1.x + " " + this.pos1.y +
+				" C " + this.posC1.x + " " + this.posC1.y +
+				", " + this.posC2.x + " " + this.posC2.y +
+				", " + this.pos2.x + " " + this.pos2.y;
 	}
 }
 
@@ -418,21 +514,27 @@ class mySVG {
 		this.selectingRectangle = false;
 		this.selected = []; // ids
 		this.descendants = []; // ids
+		this.editingControl1; // bool
+		this.editingControl2; // bool
+		this.editingCurve; // id
 		
 		// -- create background
 		this.$background = this.createBackground();
 		
 		// -- create SVG grouping elements
-		this.lineGroup = $(document.createElementNS(xmlns, 'g')).appendTo(this.$svg).attr({
-			id: 'lineGroup'
-		})[0];
-		this.pointGroup = $(document.createElementNS(xmlns, 'g')).appendTo(this.$svg).attr({
-			id: 'pointGroup'
-		})[0];
+		this.lineGroup = $(document.createElementNS(xmlns, 'g')).appendTo(this.$svg).attr({id: 'lineGroup'})[0];
+		this.pointGroup = $(document.createElementNS(xmlns, 'g')).appendTo(this.$svg).attr({id: 'pointGroup'})[0];
+		this.guiGroup = $(document.createElementNS(xmlns, 'g')).appendTo(this.$svg).attr({id: 'guiGroup'})[0];
 		
 		// -- create tool gui svg elements
 		this.$selectRectangle = this.createSelectionRectangle();
-		
+		this.stopSelectionInRectangle();
+		this.controlPoint1;
+		this.controlPoint2;
+		this.controlPoint1Line;
+		this.controlPoint2Line;
+		this.createCurveGui();
+		this.stopCurveEdit();
 		
 		// -- create Enriques base point
 		let pt = BasePoint.new(this.elements, this.pointGroup, {x:10, y:80}, 6);
@@ -440,13 +542,15 @@ class mySVG {
 		this.selectElement(this.basePoint);
 		
 		// -- create example diagram
-		this.createExampleDiagram();
+		// this.createExampleDiagram();
+		this.c1 = Curve.new(this.elements, this.lineGroup, {x:20, y:30}, {x:50, y:10}, {x:10, y:10}, {x:40, y:30});
+		this.c2 = Curve.new(this.elements, this.lineGroup, {x:70, y:30}, {x:80, y:10}, {x:70, y:10}, {x:90, y:30});
 		
 		// -- add mouse event listeners
 		this.makeInteractive();
 	}
 	
-	// -- GENERAL
+	// ---- TOOLS
 	
 	makeInteractive() {
 		// mouse events
@@ -491,6 +595,9 @@ class mySVG {
 			case Tool.Free:
 				this.freeClick(evt);
 				break;
+			case Tool.CurveEdit:
+				this.curveEditClick(evt);
+				break;
 			default:
 				break;
 		}
@@ -516,6 +623,9 @@ class mySVG {
 				break;
 			case Tool.Free:
 				this.freeDrag(evt);
+				break;
+			case Tool.CurveEdit:
+				this.curveEditDrag(evt);
 				break;
 			default:
 				break;
@@ -543,11 +653,15 @@ class mySVG {
 			case Tool.Free:
 				this.freeEndDrag(evt);
 				break;
+			case Tool.CurveEdit:
+				this.curveEditEndDrag(evt);
+				break;
 			default:
 				break;
 		}
 		
 		this.mouseButtons = 0;
+		
 	}
 	
 	doOnMouseOver(evt) {
@@ -555,7 +669,7 @@ class mySVG {
 			this.mousePos = this.getMousePosition(evt);
 			this.targetId = evt.target.id;
 			this.targetElement = this.elements[this.targetId];
-			this.mouseButtons = evt.buttons;
+			//this.mouseButtons = evt.buttons;
 			
 			// -- act depending on tool
 			switch (GlobalState.tool) {
@@ -571,13 +685,14 @@ class mySVG {
 				case Tool.Free:
 					this.freeMouseOver(evt);
 					break;
+				case Tool.CurveEdit:
+					this.curveEditMouseOver(evt);
+					break;
 				default:
 					break;
 			}
 		}
 	}
-	
-	// ---- TOOLS
 	
 	// -- main tool
 	
@@ -646,6 +761,46 @@ class mySVG {
 	
 	mainToolMouseOver(evt) {}
 	
+	// -- select
+	
+	selectClick(evt) {
+		if (this.mouseButtons & (MouseButton.Left | MouseButton.Right)) {
+			if (this.targetId == 'background') {
+				// >> click on background
+				this.unselectAll();
+				this.startSelectionInRectangle();
+
+			} else if (this.targetElement && movablePointTypes.includes(this.targetElement.type)) {
+				// >> click on movable point
+				this.toggleSelectElement(this.targetId);
+			}
+		}
+	}
+	
+	selectDrag(evt) {
+		if (this.mouseButtons & (MouseButton.Left | MouseButton.Right)) {
+			if (this.selectingRectangle) {
+				this.multipleSelectInRectangle();
+			}
+		}
+	}
+	
+	selectEndDrag(evt) {
+		this.stopSelectionInRectangle();
+	}
+	
+	selectMouseOver(evt) {}
+	
+	// -- eraser
+	
+	eraserClick = this.erase;
+	
+	eraserDrag = this.erase;
+	
+	eraserEndDrag(evt) { this.unselectAll(); }
+	
+	eraserMouseOver(evt) { this.highlightDescendants(this.targetElement); }
+	
 	// -- free
 	
 	freeClick(evt) {
@@ -684,49 +839,57 @@ class mySVG {
 	
 	freeMouseOver(evt) {}
 	
-	// -- select
+	// -- curveEdit
 	
-	selectClick(evt) {
-		if (this.mouseButtons & (MouseButton.Left | MouseButton.Right)) {
+	curveEditClick(evt) {
+		if (this.mouseButtons & MouseButton.Left) {
 			if (this.targetId == 'background') {
-				// >> click on background
+				this.stopCurveEdit();
 				this.unselectAll();
-				this.startSelectionInRectangle();
-
-			} else if (this.targetElement && movablePointTypes.includes(this.targetElement.type)) {
-				// >> click on movable point
-				this.toggleSelectElement(this.targetId);
+			} else if (this.targetElement) {
+				if (this.targetElement.type == ObjectTypes.Curve) {
+					this.startCurveEdit();
+					this.unselectAll();
+				} else if (this.targetId == this.controlPoint1.id) {
+					this.unselectAll();
+					this.selectElement(this.targetId);
+					this.editingControl1 = true;
+					this.editingControl2 = false;
+				} else if (this.targetId == this.controlPoint2.id) {
+					this.unselectAll();
+					this.selectElement(this.targetId);
+					this.editingControl1 = false;
+					this.editingControl2 = true;
+				}
+			} 
+		}
+		// console.log(this.c1.positionC1.x, this.c1.positionC1.y, " ", this.c1.positionC2.x, this.c1.positionC2.y, this.c1.element.getAttributeNS(null, "d"));
+		// console.log(this.c2.positionC1.x, this.c2.positionC1.y, " ", this.c2.positionC2.x, this.c2.positionC2.y, this.c2.element.getAttributeNS(null, "d"));
+	}
+	
+	curveEditDrag(evt) {
+		if (this.mouseButtons & MouseButton.Left) {
+			// if (this.editingCurve) {
+			// this.moveSelectedBy(this.dx, this.dy);
+			if (this.editingControl1) {
+				this.controlPoint1.moveBy(this.dx, this.dy);
+				this.controlPoint1Line.position2 = this.controlPoint1.position;
+				this.elements[this.editingCurve].positionC1 = this.controlPoint1.position;
+			} else if (this.editingControl2) {
+				this.controlPoint2.moveBy(this.dx, this.dy);
+				this.controlPoint2Line.position2 = this.controlPoint2.position;
+				this.elements[this.editingCurve].positionC2 = this.controlPoint2.position;
 			}
+			// }
 		}
 	}
 	
-	selectDrag(evt) {
-		if (this.mouseButtons & (MouseButton.Left | MouseButton.Right)) {
-			if (this.selectingRectangle) {
-				this.multipleSelectInRectangle();
-			}
-		}
+	curveEditEndDrag(evt) {
+		this.editingControl1 = false;
+		this.editingControl2 = false;
 	}
 	
-	selectEndDrag(evt) {
-		this.stopSelectionInRectangle();
-	}
-	
-	selectMouseOver(event) {}
-	
-	// -- eraser
-	
-	eraserClick = this.erase;
-	
-	eraserDrag = this.erase;
-	
-	eraserEndDrag(evt) {
-		this.unselectAll();
-	}
-	
-	eraserMouseOver(evt) {
-		this.highlightDescendants(this.targetElement);
-	}
+	curveEditMouseOver(evt) {}
 	
 	// ---- FUNCTIONS
 	
@@ -829,7 +992,7 @@ class mySVG {
 		}
 		this.descendants = [];
 		
-		if (element && movablePointTypes.includes(element.type)) {
+		if (element && deletablePointTypes.includes(element.type)) {
 			// -- highlight descendants of element and itself
 			// element.element.classList.add("highlight");
 			// this.descendants.push(element.id);
@@ -933,6 +1096,41 @@ class mySVG {
 		this.$selectRectangle.attr({visibility: "hidden"});
 	}
 	
+	// -- edit curve
+	
+	startCurveEdit() {
+		this.editingControl1 = false;
+		this.editingControl2 = false;
+		this.editingCurve = this.targetId;
+		var curve = this.elements[this.editingCurve];
+		console.log("startCurveEdit", curve.id);
+		console.log(curve.positionC1);
+		// console.log(curve.positionC1);
+		this.controlPoint1.position = curve.positionC1;
+		this.controlPoint2.position = curve.positionC2;
+		this.controlPoint1Line.position1 = curve.position1;
+		this.controlPoint1Line.position2 = curve.positionC1;
+		this.controlPoint2Line.position1 = curve.position2;
+		this.controlPoint2Line.position2 = curve.positionC2;
+		
+		this.controlPoint1.element.setAttributeNS(null, "visibility", "visible");
+		this.controlPoint2.element.setAttributeNS(null, "visibility", "visible");
+		this.controlPoint1Line.element.setAttributeNS(null, "visibility", "visible");
+		this.controlPoint2Line.element.setAttributeNS(null, "visibility", "visible");
+	}
+	
+	stopCurveEdit() {
+		console.log("stopCurveEdit", this.editingCurve);
+		if (this.editingCurve) console.log(this.elements[this.editingCurve].positionC1);
+		this.editingCurve = null;
+		this.editingControl1 = false;
+		this.editingControl2 = false;
+		this.controlPoint1.element.setAttributeNS(null, "visibility", "hidden");
+		this.controlPoint2.element.setAttributeNS(null, "visibility", "hidden");
+		this.controlPoint1Line.element.setAttributeNS(null, "visibility", "hidden");
+		this.controlPoint2Line.element.setAttributeNS(null, "visibility", "hidden");
+	}
+	
 	// -- create
 	
 	createBackground() {
@@ -954,8 +1152,30 @@ class mySVG {
 			width: 0,
 			height: 0,
 			visibility: "visible"
-		}).appendTo(this.$svg); //width: this.$svg.attr('width'), height: this.$svg.attr('height')
+		}).appendTo($(this.guiGroup)); //width: this.$svg.attr('width'), height: this.$svg.attr('height')
 		return $rect;
+	};
+	
+	createCurveGui() {
+		let l;
+		
+		l = Line.new(this.elements, this.guiGroup, {x:20, y:30}, {x:50, y:10});
+		l.element.classList.add("gui");
+		this.controlPoint1Line = l;
+		
+		l = Line.new(this.elements, this.guiGroup, {x:10, y:10}, {x:40, y:30});
+		l.element.classList.add("gui");
+		this.controlPoint2Line = l;
+		
+		let pt;
+		
+		pt = Point.new(this.elements, this.guiGroup, {x:50, y:10}, 4);
+		pt.element.classList.add("gui");
+		this.controlPoint1 = pt;
+		
+		pt = Point.new(this.elements, this.guiGroup, {x:10, y:10}, 4);
+		pt.element.classList.add("gui");
+		this.controlPoint2 = pt;
 	};
 	
 	createFreePoint(parentId, pos) {

@@ -270,6 +270,15 @@ svg {
 	stroke-width: 1pt;
 }
 
+.gui.point {
+	fill: var(--svg-transparent-dark-color);
+	stroke: var(--svg-transparent-light-color);
+}
+
+.gui.line {
+	stroke: var(--svg-transparent-dark-color);
+}
+
 .static {
 	cursor: not-allowed;
 }
@@ -311,7 +320,9 @@ svg {
 	stroke: var(--svg-selected-color);
 }
 
-
+.curve:hover {
+	stroke-width: 3;
+}
 
 
 

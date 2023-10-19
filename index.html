@@ -18,7 +18,7 @@
 		<div id="start">
 			<a id="site-link" href="/" title="Enriques diagram generator">
 				<div id="logo-icon">
-					<img id="site-logo" src="siteLogo/cusp.svg" alt="siteLogo/cusp.svg" focusable="false" class="not-selectable" style="border-radius: 3px">
+					<img id="site-logo" src="siteLogo/cusp.svg" alt="siteLogo/cusp.svg" focusable="false" style="border-radius: 3px">
 				</div
 				><span id="site-span">Enriques diagram generator</span>
 			</a>
@@ -28,24 +28,28 @@
 	<div class="toolbar">
 		<button id="downloadButton" onClick="downloadInnerHtml('diagram.svg')" class="toolLabel not-selectable">
 			<span style="margin-right: 5px;">Download</span>
-			<img src = "tools/download.svg" alt="tools/download.svg"/>
+			<img src = "tools/download.svg" alt="tools/download.svg" draggable="false"/>
 		</button
 		><div class="vl"></div
 		><input type="radio" name="tool" id="mainTool" value="mainTool"
 		><label for="mainTool" class="toolLabel not-selectable">
-			<img src = "tools/main.svg" alt="tools/main.svg"/>
+			<img src = "tools/main.svg" alt="tools/main.svg" draggable="false"/>
 		</label
 		><input type="radio" name="tool" id="select" value="select"
 		><label for="select" class="toolLabel not-selectable">
-			<img src = "tools/select.svg" alt="tools/select.svg"/>
+			<img src = "tools/select.svg" alt="tools/select.svg" draggable="false"/>
 		</label
 		><input type="radio" name="tool" id="eraser" value="eraser"
 		><label for="eraser" class="toolLabel not-selectable">
-			<img src = "tools/eraser.svg" alt="tools/eraser.svg"/>
+			<img src = "tools/eraser.svg" alt="tools/eraser.svg" draggable="false"/>
 		</label
 		><input type="radio" name="tool" id="free" value="free"
 		><label for="free" class="toolLabel not-selectable">
-			<img src = "tools/free.svg" alt="tools/free.svg"/>
+			<img src = "tools/free.svg" alt="tools/free.svg" draggable="false"/>
+		</label
+		><input type="radio" name="tool" id="curveEdit" value="curveEdit"
+		><label for="curveEdit" class="toolLabel not-selectable">
+			curveEdit
 		</label>
 	</div>
 	
