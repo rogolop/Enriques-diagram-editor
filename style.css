@@ -26,6 +26,7 @@ html * {
 	--svg-transparent-light-color: #ffffff20;
 	--svg-selected-color: var(--accent-color);
 	--svg-deletePoint-color: #c82e2e;
+	--gui-color: var(--accent-color);
 }
 
 body {
@@ -267,17 +268,51 @@ svg {
 .selectRectangle {
 	fill: var(--svg-transparent-dark-color);
 	stroke: var(--svg-transparent-light-color);
-	stroke-width: 1pt;
+	stroke-width: 1;
 }
 
-.gui.point {
+#controlPoint1,
+#controlPoint2 {
 	fill: var(--svg-transparent-dark-color);
-	stroke: var(--svg-transparent-light-color);
+	stroke: var(--gui-color);
+	stroke-width: 1;
 }
 
-.gui.line {
-	stroke: var(--svg-transparent-dark-color);
+#controlPoint1:hover,
+#controlPoint2:hover {
+	fill: var(--svg-transparent-dark-color);
+	stroke: var(--gui-color);
+	stroke-width: 1;
 }
+
+#controlPoint1.selected,
+#controlPoint2.selected {
+	fill: var(--svg-transparent-dark-color);
+	stroke: var(--gui-color);
+	stroke-width: 1;
+}
+
+#controlPoint1Line,
+#controlPoint2Line {
+	stroke: var(--gui-color);
+	stroke-width: 0.7;
+	pointer-events: none;
+	/* var(--svg-transparent-dark-color); */
+}
+
+#shadowPoint {
+	fill: var(--svg-transparent-dark-color);
+	/* stroke: var(--gui-color); */
+	stroke-width: 1;
+	pointer-events: none;
+}
+
+#shadowLine {
+	stroke: var(--svg-transparent-dark-color);
+	stroke-width: 1.5;
+	pointer-events: none;
+}
+
 
 .static {
 	cursor: not-allowed;
@@ -299,7 +334,7 @@ svg {
 	stroke: var(--svg-transparent-dark-color);
 	stroke-width: 2pt;
 	/* stroke-dasharray: 2,2; */
-	stroke-linejoin: round;
+	/* stroke-linejoin: round; */
 	paint-order: stroke;
 	/* outline: 1pt dashed #00000030; */
 }
@@ -308,7 +343,8 @@ svg {
 	fill: var(--svg-deletePoint-color) !important;
 }
 
-.line.highlight {
+.line.highlight,
+.curve.highlight {
 	stroke: var(--svg-deletePoint-color) !important;
 }
 
@@ -398,12 +434,12 @@ svg {
 }
 
 .interactiveSVG .controllable-point {
-	fill: rgb(64, 95, 237);
+	fill: var(--gui-color);
 	pointer-events: none;
 }
 
 .interactiveSVG .controllable-line {
-	stroke: rgb(64, 95, 237);
+	stroke: var(--gui-color);
 }
 
 .interactiveSVG .generated-point {

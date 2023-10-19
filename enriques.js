@@ -10,6 +10,7 @@ const Tool = {
 	Eraser: "eraser",
 	Select: "select",
 	Free: "free",
+	Satellite: "satellite",
 	CurveEdit: "curveEdit"
 };
 const Tools = Object.keys(Tool).map(function(key){return Tool[key];});
@@ -27,8 +28,8 @@ const ObjectTypes = {
 	Line: "Line",
 	Curve: "Curve",
 	BasePoint: "BasePoint",
-	LastFreePoint: "LastFreePoint",
 	LastSatellitePoint: "LastSatellitePoint",
+	LastFreePoint: "LastFreePoint",
 	IntermediatePoint: "IntermediatePoint"
 };
 
@@ -39,25 +40,36 @@ const enriquesPointTypes = [
 	ObjectTypes.IntermediatePoint
 ];
 
+const infinitelyClosePointTypes = [
+	ObjectTypes.LastFreePoint,
+	ObjectTypes.LastSatellitePoint,
+	ObjectTypes.IntermediatePoint
+];
+
 const movablePointTypes = [
 	ObjectTypes.BasePoint,
-	ObjectTypes.LastFreePoint,
-	ObjectTypes.LastSatellitePoint
+	ObjectTypes.LastSatellitePoint,
+	ObjectTypes.LastFreePoint
 ];
 
 const deletablePointTypes = [
-	ObjectTypes.LastFreePoint,
-	ObjectTypes.LastSatellitePoint
+	ObjectTypes.LastSatellitePoint,
+	ObjectTypes.LastFreePoint
 ];
 
 const lastPointTypes = [
-	ObjectTypes.LastFreePoint,
-	ObjectTypes.LastSatellitePoint
+	ObjectTypes.LastSatellitePoint,
+	ObjectTypes.LastFreePoint
+];
+
+const unconstrainedPointTypes = [
+	ObjectTypes.BasePoint,
+	ObjectTypes.LastFreePoint
 ];
 
 // Global state
 var initGlobalState = {
-	tool: Tool.CurveEdit,
+	tool: Tool.Free,
 	mySVGs: []
 };
 var GlobalState = initGlobalState;
@@ -80,7 +92,7 @@ function selectSVG(evt) {
 function downloadInnerHtml(filename) {
 	var mimeType = 'image/svg+xml';
 	
-	// active_mySVG.hideToolGUI();
+	active_mySVG.hideToolGUI();
 	
 	// -- outerHTML inludes the html element itself, innerHTML only includes children
 	// var elHtml = document.getElementById(elId).outerHTML; //.innerHTML;
@@ -123,6 +135,8 @@ $(function() {
 		if (Tools.includes(this.value)) {
 			GlobalState.tool = this.value;
 			
+			active_mySVG.hideToolGUI();
+			
 			// -- add active tool to svg as class
 			for (const tool of Tools) {
 				activeSVG.classList.remove(tool);
@@ -134,6 +148,30 @@ $(function() {
 });
 
 ////////////////////////////////////////////////////////////////////
+
+function distance2(pos1, pos2) {
+	return (pos1.x-pos2.x)**2 + (pos1.y - pos2.y)**2;
+}
+
+function distance(pos1, pos2) {
+	return Math.sqrt(distance2(pos1, pos2));
+}
+
+function normalized(v) {
+	let n = Math.sqrt(v.x**2 + v.y**2);
+	return { x: v.x/n, y: v.y/n };
+}
+
+function directionFromTo(pos1, pos2) {
+	return normalized({x: pos2.x-pos1.x, y: pos2.y-pos1.y});
+}
+
+function rotate(v, theta) {
+	return {
+		x: v.x*Math.cos(theta) + v.y*Math.sin(theta),
+		y: - v.x*Math.sin(theta) + v.y*Math.cos(theta)
+	};
+}
 
 class myElement {
 	static instanceNumber = 0;
@@ -299,6 +337,13 @@ class Line extends myElement {
 	moveTo(x, y) {
 		this.moveBy(x-this.pos.x, y-this.pos.y);
 	}
+	
+	getTangentAt(t) {
+		return {
+			x: this.pos2.x - this.pos1.x,
+			y: this.pos2.y - this.pos1.y
+		};
+	}
 }
 
 class Curve extends myElement {
@@ -371,7 +416,7 @@ class Curve extends myElement {
 		element.setAttributeNS(null, 'd', this.getPathString());
 		element.setAttributeNS(null, 'stroke', "black"); // necessary
 		element.setAttributeNS(null, 'stroke-width', 1.5);
-		element.setAttributeNS(null, "fill-opacity", 0);
+		element.setAttributeNS(null, "fill", "none");
 		element.setAttributeNS(null, 'class', 'curve draggable');
 		element = this.svg.appendChild(element);
 		return element;
@@ -391,6 +436,18 @@ class Curve extends myElement {
 		this.element.setAttributeNS(null, 'd', this.getPathString());
 	}
 	
+	moveC1By(dx, dy) {
+		this.posC1.x += dx;
+		this.posC1.y += dy;
+		this.element.setAttributeNS(null, 'd', this.getPathString());
+	}
+	
+	moveC2By(dx, dy) {
+		this.posC2.x += dx;
+		this.posC2.y += dy;
+		this.element.setAttributeNS(null, 'd', this.getPathString());
+	}
+	
 	moveTo(x, y) {
 		this.moveBy(x-this.pos.x, y-this.pos.y);
 	}
@@ -400,6 +457,13 @@ class Curve extends myElement {
 				" C " + this.posC1.x + " " + this.posC1.y +
 				", " + this.posC2.x + " " + this.posC2.y +
 				", " + this.pos2.x + " " + this.pos2.y;
+	}
+	
+	getTangentAt(t) {
+		return {
+			x: 3*(1-t)**2*(this.posC1.x-this.pos1.x) + 6*(1-t)*t*(this.posC2.x-this.posC1.x) + 3*t**2*(this.pos2.x-this.posC2.x),
+			y: 3*(1-t)**2*(this.posC1.y-this.pos1.y) + 6*(1-t)*t*(this.posC2.y-this.posC1.y) + 3*t**2*(this.pos2.y-this.posC2.y)
+		};
 	}
 }
 
@@ -412,6 +476,20 @@ class LineFromTo extends Line {
 	
 	constructor(_svg, _pt1, _pt2) {
 		super(_svg, _pt1.position, _pt2.position);
+		this.point1 = _pt1.id; // id
+		this.point2 = _pt2.id; // id
+	}
+}
+
+class CurveFromTo extends Curve {
+	static new(_elements, _svg, _pt1, _pt2, _posC1, _posC2) {
+		let line = new CurveFromTo(_svg, _pt1, _pt2, _posC1, _posC2);
+		_elements[line.id] = line;
+		return line;
+	}
+	
+	constructor(_svg, _pt1, _pt2, _posC1, _posC2) {
+		super(_svg, _pt1.position, _posC1, _posC2, _pt2.position);
 		this.point1 = _pt1.id; // id
 		this.point2 = _pt2.id; // id
 	}
@@ -431,6 +509,32 @@ class BasePoint extends Point {
 	}
 }
 
+class LastSatellitePoint extends Point {
+	static instanceNumber = 0;
+	static newID() {
+		let n = LastSatellitePoint.instanceNumber;
+		LastSatellitePoint.instanceNumber++;
+		return n;
+	}
+	
+	static new(_elements, _lineParent, _pointParent, _base, _pos, _r) {
+		let pt = new LastSatellitePoint(_elements, _pointParent, _base, _pos, _r);
+		let _line = LineFromTo.new(_elements, _lineParent, _base, pt); // JS line
+		pt.curve = _line.id;
+		_elements[pt.id] = pt;
+		return pt;
+	}
+	
+	constructor(_elements, _pointParent, _base, _pos, _r) {
+		super(_pointParent, _pos, _r);
+		this.curve = null;
+		this.base = _base.id; // id BasePoint / LastSatellitePoint
+		_base.children.push(this.id);
+		this.children = []; // ids
+		this.type = ObjectTypes.LastSatellitePoint;
+	}
+}
+
 class LastFreePoint extends Point {
 	static instanceNumber = 0;
 	static newID() {
@@ -439,17 +543,19 @@ class LastFreePoint extends Point {
 		return n;
 	}
 	
-	static new(_elements, _lineParent, _pointParent, _base, _pos, _r) {
+	static new(_elements, _lineParent, _pointParent, _base, _pos, _r, _startTangent, _endTangent) {
 		let pt = new LastFreePoint(_elements, _pointParent, _base, _pos, _r);
-		let _line = LineFromTo.new(_elements, _lineParent, _base, pt); // JS line
-		pt.line = _line.id;
+		let _C1 = {x: _base.position.x+_startTangent.x, y:_base.position.y+_startTangent.y};
+		let _C2 = {x: _pos.x-_endTangent.x, y:_pos.y-_endTangent.y};
+		let _curve = CurveFromTo.new(_elements, _lineParent, _base, pt, _C1, _C2); // JS line
+		pt.curve = _curve.id;
 		_elements[pt.id] = pt;
 		return pt;
 	}
 	
 	constructor(_elements, _pointParent, _base, _pos, _r) {
 		super(_pointParent, _pos, _r);
-		this.line = null;
+		this.curve = null;
 		this.base = _base.id; // id BasePoint / LastFreePoint
 		_base.children.push(this.id);
 		this.children = []; // ids
@@ -516,7 +622,8 @@ class mySVG {
 		this.descendants = []; // ids
 		this.editingControl1; // bool
 		this.editingControl2; // bool
-		this.editingCurve; // id
+		this.editingElement1; // curve id
+		this.editingElement2; // curve id
 		
 		// -- create background
 		this.$background = this.createBackground();
@@ -535,16 +642,19 @@ class mySVG {
 		this.controlPoint2Line;
 		this.createCurveGui();
 		this.stopCurveEdit();
+		this.shadowPoint;
+		this.shadowLine;
+		this.createShadowPointGui();
 		
 		// -- create Enriques base point
-		let pt = BasePoint.new(this.elements, this.pointGroup, {x:10, y:80}, 6);
+		let pt = BasePoint.new(this.elements, this.pointGroup, {x:30, y:50}, 6);
 		this.basePoint = pt.id; // id
 		this.selectElement(this.basePoint);
 		
 		// -- create example diagram
 		// this.createExampleDiagram();
-		this.c1 = Curve.new(this.elements, this.lineGroup, {x:20, y:30}, {x:50, y:10}, {x:10, y:10}, {x:40, y:30});
-		this.c2 = Curve.new(this.elements, this.lineGroup, {x:70, y:30}, {x:80, y:10}, {x:70, y:10}, {x:90, y:30});
+		
+		this.hideToolGUI();
 		
 		// -- add mouse event listeners
 		this.makeInteractive();
@@ -595,6 +705,9 @@ class mySVG {
 			case Tool.Free:
 				this.freeClick(evt);
 				break;
+			case Tool.Satellite:
+				this.satelliteClick(evt);
+				break;
 			case Tool.CurveEdit:
 				this.curveEditClick(evt);
 				break;
@@ -624,6 +737,9 @@ class mySVG {
 			case Tool.Free:
 				this.freeDrag(evt);
 				break;
+			case Tool.Satellite:
+				this.satelliteDrag(evt);
+				break;
 			case Tool.CurveEdit:
 				this.curveEditDrag(evt);
 				break;
@@ -652,6 +768,9 @@ class mySVG {
 				break;
 			case Tool.Free:
 				this.freeEndDrag(evt);
+				break;
+			case Tool.Satellite:
+				this.satelliteEndDrag(evt);
 				break;
 			case Tool.CurveEdit:
 				this.curveEditEndDrag(evt);
@@ -685,6 +804,9 @@ class mySVG {
 				case Tool.Free:
 					this.freeMouseOver(evt);
 					break;
+				case Tool.Satellite:
+					this.satelliteMouseOver(evt);
+					break;
 				case Tool.CurveEdit:
 					this.curveEditMouseOver(evt);
 					break;
@@ -698,20 +820,42 @@ class mySVG {
 	
 	mainToolClick(evt) {
 		if (this.mouseButtons & MouseButton.Left) {
-			if (this.targetId == 'background' && this.selected.length == 1) {
-				let pt = this.createFreePoint(this.selected[0], this.mousePos);
+			if (this.targetId == 'background') {
 				this.unselectAll();
-				this.selectElement(pt.id);
+				this.startSelectionInRectangle();
+				this.stopCurveEdit();
 				
-			} else if (this.targetElement && movablePointTypes.includes(this.targetElement.type)) {
+			} else if (this.targetElement && this.targetElement.type == ObjectTypes.Curve) {
+				this.startCurveEdit(this.targetId);
+			} else if (this.targetElement && unconstrainedPointTypes.includes(this.targetElement.type)) {
+			// (this.targetElement && this.targetElement.type == ObjectTypes.LastFreePoint) {
+				this.startTangentEdit(this.targetId);
+			// } else if (this.targetElement && this.targetElement.type == ObjectTypes.BasePoint) {
+			// 	this.stopCurveEdit();
+			} else if (this.targetId == this.controlPoint1.id) {
+				// this.selectElement(this.targetId);
+				this.editingControl1 = true;
+				this.editingControl2 = false;
+			} else if (this.targetId == this.controlPoint2.id) {
+				// this.selectElement(this.targetId);
+				this.editingControl1 = false;
+				this.editingControl2 = true;
+			} else {
+				this.stopCurveEdit();
+			}
+			
+			if (this.targetElement && movablePointTypes.includes(this.targetElement.type)) {
 				if (this.selected.length <= 1 || !this.selected.includes(this.targetId)) {
 					this.unselectAll();
 					this.selectElement(this.targetId);
 				}
+			
+			} else if (this.editingControl1 || this.editingControl2) {
 				
 			} else {
 				this.unselectAll();
 			}
+			
 		} else if (this.mouseButtons & MouseButton.Right) {
 			if (this.targetId == 'background') {
 				this.unselectAll();
@@ -720,14 +864,35 @@ class mySVG {
 			// else if (this.targetElement && movablePointTypes.includes(this.targetElement.type)) {
 			// 	this.toggleSelectElement(this.targetId);
 			// }
+			this.stopCurveEdit();
 		}
 	}
 	
 	mainToolDrag(evt) {
 		if (this.mouseButtons & MouseButton.Left) {
-			// -- drag objects (if any)
-			this.movingAnElement = true;
-			this.moveSelectedBy(this.dx, this.dy);
+			if (this.selectingRectangle) {
+				this.multipleSelectInRectangle();
+			} else if (this.editingControl1 || this.editingControl2) {
+				if (this.editingControl1) {
+					this.editCurveControl1(this.editingElement1);
+				} else if (this.editingControl2) {
+					this.editCurveControl2(this.editingElement2);
+				}
+				
+			} else if (this.selected.length > 0) {
+				this.movingAnElement = true;
+				this.moveSelectedBy(this.dx, this.dy);
+				
+				if (this.selected.length == 1) {
+				// // (this.targetElement && (this.targetElement.type == ObjectTypes.Curve || unconstrainedPointTypes.includes(this.targetElement.type))) {
+					this.controlPoint1.moveBy(this.dx, this.dy);
+					this.controlPoint1Line.position1 = this.elements[this.selected[0]].position;
+					this.controlPoint1Line.position2 = this.controlPoint1.position;
+					this.controlPoint2.moveBy(this.dx, this.dy);
+					this.controlPoint2Line.position1 = this.elements[this.selected[0]].position;
+					this.controlPoint2Line.position2 = this.controlPoint2.position;
+				}
+			}
 			
 		} else if (this.mouseButtons & MouseButton.Right) {
 			if (this.selectingRectangle) {
@@ -740,8 +905,10 @@ class mySVG {
 		if (this.mouseButtons & MouseButton.Left) {
 			if (this.movingAnElement) {
 				this.movingAnElement = false;
+			} else if (this.selectingRectangle) {
+				this.stopSelectionInRectangle();
 			} else {
-				// if (this.distance2(this.dragStartMousePos, this.mousePos) < EPS) {
+				// if (distance2(this.dragStartMousePos, this.mousePos) < EPS) {
 				if (this.targetElement && movablePointTypes.includes(this.targetElement.type)) {
 					if (this.selected.length >= 2) {
 						this.toggleSelectElement(this.targetId);
@@ -757,6 +924,9 @@ class mySVG {
 				}
 			}
 		}
+		
+		this.editingControl1 = false;
+		this.editingControl2 = false;
 	}
 	
 	mainToolMouseOver(evt) {}
@@ -809,6 +979,7 @@ class mySVG {
 				let pt = this.createFreePoint(this.selected[0], this.mousePos);
 				this.unselectAll();
 				this.selectElement(pt.id);
+				// this.shadowLine.position1 = this.elements[this.selected[0]].position;
 				
 			} else if (this.targetElement && movablePointTypes.includes(this.targetElement.type)) {
 				this.unselectAll();
@@ -821,13 +992,28 @@ class mySVG {
 		} else if (this.mouseButtons & MouseButton.Right) {
 			this.unselectAll();
 		}
+		
+		if (this.selected.length == 1) {
+			this.shadowPoint.position = this.mousePos;
+			// this.shadowLine.position2 = this.mousePos;
+		} else {
+			this.shadowPoint.element.setAttributeNS(null, "visibility", "hidden");
+			// this.shadowLine.element.setAttributeNS(null, "visibility", "hidden");
+		}
 	}
 	
 	freeDrag(evt) {
 		if (this.mouseButtons & MouseButton.Left) {
-			// -- drag objects (if any)
-			this.movingAnElement = true;
-			this.moveSelectedBy(this.dx, this.dy);
+			// if (this.selected.length > 0) {
+				// -- drag objects (if any)
+				this.movingAnElement = true;
+				this.moveSelectedBy(this.dx, this.dy);
+			// } 
+		}
+		
+		if (this.selected.length == 1) {
+			this.shadowPoint.position = this.mousePos;
+			// this.shadowLine.position2 = this.mousePos;
 		}
 	}
 	
@@ -837,50 +1023,130 @@ class mySVG {
 		}
 	}
 	
-	freeMouseOver(evt) {}
+	freeMouseOver(evt) {
+		if (this.targetId == 'background') {
+			this.shadowPoint.element.setAttributeNS(null, "visibility", "visible");
+		} else {
+			this.shadowPoint.element.setAttributeNS(null, "visibility", "hidden");
+		}
+		
+		if (this.targetId == 'background' && this.selected.length == 1  && movablePointTypes.includes(this.elements[this.selected[0]].type)) {
+			this.shadowPoint.element.setAttributeNS(null, "visibility", "visible");
+			// this.shadowLine.element.setAttributeNS(null, "visibility", "visible");
+			// this.shadowLine.position1 = this.elements[this.selected[0]].position;
+		} else {
+			this.shadowPoint.element.setAttributeNS(null, "visibility", "hidden");
+			// this.shadowLine.element.setAttributeNS(null, "visibility", "hidden");
+		}
+	}
+	
+	// -- free
+	
+	satelliteClick(evt) {
+		if (this.mouseButtons & MouseButton.Left) {
+			if (this.targetId == 'background' && this.selected.length == 1 && infinitelyClosePointTypes.includes(this.elements[this.selected[0]].type)) {
+				let pt = this.createSatellitePoint(this.selected[0], this.mousePos);
+				this.unselectAll();
+				this.selectElement(pt.id);
+				this.shadowLine.position1 = this.elements[this.selected[0]].position;
+				
+			} else if (this.targetElement && infinitelyClosePointTypes.includes(this.targetElement.type)) {
+				this.unselectAll();
+				this.selectElement(this.targetId);
+				
+			} else {
+				this.unselectAll();
+			}
+			
+		} else if (this.mouseButtons & MouseButton.Right) {
+			this.unselectAll();
+		}
+		
+		if (this.selected.length == 1) {
+			let projPos = this.projectPosOnNormal(this.selected[0], this.mousePos);
+			this.shadowPoint.position = projPos;
+			this.shadowLine.position2 = projPos;
+		} else {
+			this.shadowPoint.element.setAttributeNS(null, "visibility", "hidden");
+			this.shadowLine.element.setAttributeNS(null, "visibility", "hidden");
+		}
+	}
+	
+	satelliteDrag(evt) {
+		if (this.mouseButtons & MouseButton.Left) {
+			// -- drag objects (if any)
+			this.movingAnElement = true;
+			this.moveSelectedBy(this.dx, this.dy);
+		}
+		
+		if (this.selected.length == 1) {
+			let projPos = this.projectPosOnNormal(this.selected[0], this.mousePos);
+			this.shadowPoint.position = projPos;
+			this.shadowLine.position2 = projPos;
+		}
+	}
+	
+	satelliteEndDrag(evt) {
+		if (this.movingAnElement) {
+			this.movingAnElement = false;
+		}
+	}
+	
+	satelliteMouseOver(evt) {
+		if (this.targetId == 'background' && this.selected.length == 1  && infinitelyClosePointTypes.includes(this.elements[this.selected[0]].type)) {
+			this.shadowPoint.element.setAttributeNS(null, "visibility", "visible");
+			this.shadowLine.element.setAttributeNS(null, "visibility", "visible");
+			this.shadowLine.position1 = this.elements[this.selected[0]].position;
+		} else {
+			this.shadowPoint.element.setAttributeNS(null, "visibility", "hidden");
+			this.shadowLine.element.setAttributeNS(null, "visibility", "hidden");
+		}
+	}
 	
 	// -- curveEdit
 	
 	curveEditClick(evt) {
+		this.unselectAll();
 		if (this.mouseButtons & MouseButton.Left) {
 			if (this.targetId == 'background') {
 				this.stopCurveEdit();
-				this.unselectAll();
+				// this.unselectAll();
 			} else if (this.targetElement) {
 				if (this.targetElement.type == ObjectTypes.Curve) {
-					this.startCurveEdit();
-					this.unselectAll();
+					this.startCurveEdit(this.targetId);
+					// this.unselectAll();
+				} else if (this.targetElement && unconstrainedPointTypes.includes(this.targetElement.type)) {
+				// (this.targetElement.type == ObjectTypes.LastFreePoint) {
+					this.startTangentEdit(this.targetId);
+					// this.unselectAll();
 				} else if (this.targetId == this.controlPoint1.id) {
-					this.unselectAll();
-					this.selectElement(this.targetId);
+					// this.unselectAll();
+					// this.selectElement(this.targetId);
 					this.editingControl1 = true;
 					this.editingControl2 = false;
 				} else if (this.targetId == this.controlPoint2.id) {
-					this.unselectAll();
-					this.selectElement(this.targetId);
+					// this.unselectAll();
+					// this.selectElement(this.targetId);
 					this.editingControl1 = false;
 					this.editingControl2 = true;
+				} else {
+					this.stopCurveEdit();
 				}
-			} 
+			} else {
+				this.stopCurveEdit();
+			}
+		} else {
+			this.stopCurveEdit();
 		}
-		// console.log(this.c1.positionC1.x, this.c1.positionC1.y, " ", this.c1.positionC2.x, this.c1.positionC2.y, this.c1.element.getAttributeNS(null, "d"));
-		// console.log(this.c2.positionC1.x, this.c2.positionC1.y, " ", this.c2.positionC2.x, this.c2.positionC2.y, this.c2.element.getAttributeNS(null, "d"));
 	}
 	
 	curveEditDrag(evt) {
 		if (this.mouseButtons & MouseButton.Left) {
-			// if (this.editingCurve) {
-			// this.moveSelectedBy(this.dx, this.dy);
 			if (this.editingControl1) {
-				this.controlPoint1.moveBy(this.dx, this.dy);
-				this.controlPoint1Line.position2 = this.controlPoint1.position;
-				this.elements[this.editingCurve].positionC1 = this.controlPoint1.position;
+				this.editCurveControl1(this.editingElement1);
 			} else if (this.editingControl2) {
-				this.controlPoint2.moveBy(this.dx, this.dy);
-				this.controlPoint2Line.position2 = this.controlPoint2.position;
-				this.elements[this.editingCurve].positionC2 = this.controlPoint2.position;
+				this.editCurveControl2(this.editingElement2);
 			}
-			// }
 		}
 	}
 	
@@ -899,35 +1165,102 @@ class mySVG {
 		for (let index = 0; index < this.selected.length; index++) {
 			const id = this.selected[index]
 			const element = this.elements[id];
-			if (element.type == ObjectTypes.BasePoint) {
-				this.moveBasePointBy(element, dx, dy);
-			} else if (element.type == ObjectTypes.LastFreePoint) {
-				this.moveLastFreePointBy(element, dx, dy);
-			} else {
-				element.moveBy(dx, dy);
+			if (movablePointTypes.includes(element.type)) {
+				// this.movePointBy(element, dx, dy);
+				this.moveDescendants(element, dx, dy);
 			}
 		}
+	}
+	
+	movePointBy(element, dx, dy) {
+		if (element.type == ObjectTypes.BasePoint) {
+			this.moveBasePointBy(element, dx, dy);
+		} else if (element.type == ObjectTypes.LastFreePoint) {
+			this.moveLastFreePointBy(element, dx, dy);
+		} else if (element.type == ObjectTypes.LastSatellitePoint) {
+			this.moveLastSatellitePointBy(element, dx, dy);
+		}
+		// else {
+		// 	element.moveBy(dx, dy);
+		// }
+	}
+	
+	moveDescendants(element, dx, dy) {
+		// this.descendants = [];
+		let queue = [element.id];
+		while (queue.length > 0) {
+			let descendant = this.elements[queue.shift()];
+			
+			if (unconstrainedPointTypes.includes(descendant.type)) {
+				if (!this.descendants.includes(descendant)) {
+					// this.descendants.push(descendant.id);
+					this.movePointBy(descendant, dx, dy);
+				}
+				// -- add children of descendant to queue
+				queue = queue.concat(descendant.children);
+			} else if (descendant.type == ObjectTypes.LastSatellitePoint) {
+				let v = this.moveLastSatellitePointBy(descendant, dx, dy);
+				for (const id of descendant.children) {
+					let child = this.elements[id];
+					this.moveDescendants(child, v.x, v.y);
+				}
+			}
+		}
+		
+		// for (const id of this.descendants) {
+		// 	this.movePointBy(this.elements[id], dx, dy);
+		// }
 	}
 	
 	moveBasePointBy(element, dx, dy) {
 		element.moveBy(dx, dy);
 		for (const childId of element.children) {
 			let child = this.elements[childId];
-			let line = this.elements[child.line];
+			let line = this.elements[child.curve];
 			line.position1 = element.position;
+			if (child.type == ObjectTypes.LastFreePoint) {
+				line.moveC1By(dx, dy);
+			}
 		}
 	}
 	
 	moveLastFreePointBy(element, dx, dy) {
 		element.moveBy(dx, dy);
-		let line = this.elements[element.line];
+		let line = this.elements[element.curve];
+		line.position2 = element.position;
+		line.moveC2By(dx, dy);
+		for (const childId of element.children) {
+			let child = this.elements[childId];
+			line = this.elements[child.curve];
+			line.position1 = element.position;
+			if (child.type == ObjectTypes.LastFreePoint) {
+				line.moveC1By(dx, dy);
+			}
+			// this.moveBy(x-this.pos.x, y-this.pos.y);
+		}
+	}
+	
+	moveLastSatellitePointBy(element, dx, dy) {
+		element.moveBy(dx, dy);
+		let pos = this.projectPosOnNormal(element.base, element.position);
+		let v = {
+			x: dx + (pos.x - element.position.x),
+			y: dy + (pos.y - element.position.y)
+		}
+		element.moveTo(pos.x, pos.y);
+		// element.moveBy(v.x, v.y);
+		let line = this.elements[element.curve];
 		line.position2 = element.position;
 		for (const childId of element.children) {
 			let child = this.elements[childId];
-			line = this.elements[child.line];
+			line = this.elements[child.curve];
 			line.position1 = element.position;
+			if (child.type == ObjectTypes.LastFreePoint) {
+				line.moveC1By(v.x, v.y);
+			}
 			// this.moveBy(x-this.pos.x, y-this.pos.y);
 		}
+		return v;
 	}
 	
 	// -- erase
@@ -966,7 +1299,7 @@ class mySVG {
 			descendant.children = [];
 			descendant.base = null;
 			
-			let line = this.elements[descendant.line];
+			let line = this.elements[descendant.curve];
 			// -- remove from SVG
 			line.element.remove();
 			// -- clear links to other points
@@ -986,7 +1319,7 @@ class mySVG {
 			descendant.element.classList.remove("highlight");
 			// -- remove highlight from incoming line
 			if (lastPointTypes.includes(descendant.type)) {
-				let line = this.elements[descendant.line];
+				let line = this.elements[descendant.curve];
 				line.element.classList.remove("highlight");
 			}
 		}
@@ -1010,13 +1343,12 @@ class mySVG {
 				// -- highlight point and line
 				descendant.element.classList.add("highlight");
 				if (lastPointTypes.includes(descendant.type)) {
-					let line = this.elements[descendant.line];
+					let line = this.elements[descendant.curve];
 					line.element.classList.add("highlight");
 				}
 			}
 		}
 	}
-	
 	
 	// -- select
 	
@@ -1098,37 +1430,154 @@ class mySVG {
 	
 	// -- edit curve
 	
-	startCurveEdit() {
+	startCurveEdit(id) {
 		this.editingControl1 = false;
 		this.editingControl2 = false;
-		this.editingCurve = this.targetId;
-		var curve = this.elements[this.editingCurve];
-		console.log("startCurveEdit", curve.id);
-		console.log(curve.positionC1);
+		this.editingElement1 = id;
+		this.editingElement2 = id;
+		// console.log("startCurveEdit", curve.id);
 		// console.log(curve.positionC1);
-		this.controlPoint1.position = curve.positionC1;
-		this.controlPoint2.position = curve.positionC2;
-		this.controlPoint1Line.position1 = curve.position1;
-		this.controlPoint1Line.position2 = curve.positionC1;
-		this.controlPoint2Line.position1 = curve.position2;
-		this.controlPoint2Line.position2 = curve.positionC2;
+		// console.log(curve.positionC1);
 		
+		var curve1 = this.elements[this.editingElement1];
+		this.controlPoint1.position = curve1.positionC1;
+		this.controlPoint1Line.position1 = curve1.position1;
+		this.controlPoint1Line.position2 = curve1.positionC1;
 		this.controlPoint1.element.setAttributeNS(null, "visibility", "visible");
-		this.controlPoint2.element.setAttributeNS(null, "visibility", "visible");
 		this.controlPoint1Line.element.setAttributeNS(null, "visibility", "visible");
+		
+		var curve2 = this.elements[this.editingElement2];
+		this.controlPoint2.position = curve2.positionC2;
+		this.controlPoint2Line.position1 = curve2.position2;
+		this.controlPoint2Line.position2 = curve2.positionC2;
+		this.controlPoint2.element.setAttributeNS(null, "visibility", "visible");
 		this.controlPoint2Line.element.setAttributeNS(null, "visibility", "visible");
 	}
 	
+	startTangentEdit(id) {
+		this.editingControl1 = false;
+		this.editingControl2 = false;
+		let point = this.elements[id];
+		
+		if (point.type == ObjectTypes.LastFreePoint) {
+			this.editingElement2 = point.curve;
+			var curve2 = this.elements[this.editingElement2];
+			this.controlPoint2.position = curve2.positionC2;
+			this.controlPoint2Line.position1 = curve2.position2;
+			this.controlPoint2Line.position2 = curve2.positionC2;
+			this.controlPoint2.element.setAttributeNS(null, "visibility", "visible");
+			this.controlPoint2Line.element.setAttributeNS(null, "visibility", "visible");
+		} else {
+			this.controlPoint2.element.setAttributeNS(null, "visibility", "hidden");
+			this.controlPoint2Line.element.setAttributeNS(null, "visibility", "hidden");
+		}
+		
+		if (point.children.length == 1) {
+			let child = this.elements[point.children[0]];
+			if (child.type == ObjectTypes.LastFreePoint) {
+				this.editingElement1 = child.curve;
+				var curve1 = this.elements[this.editingElement1];
+				this.controlPoint1.position = curve1.positionC1;
+				this.controlPoint1Line.position1 = curve1.position1;
+				this.controlPoint1Line.position2 = curve1.positionC1;
+				this.controlPoint1.element.setAttributeNS(null, "visibility", "visible");
+				this.controlPoint1Line.element.setAttributeNS(null, "visibility", "visible");
+			} else {
+				this.controlPoint1.element.setAttributeNS(null, "visibility", "hidden");
+				this.controlPoint1Line.element.setAttributeNS(null, "visibility", "hidden");
+			}
+		} else {
+			this.controlPoint1.element.setAttributeNS(null, "visibility", "hidden");
+			this.controlPoint1Line.element.setAttributeNS(null, "visibility", "hidden");
+		}
+	}
+	
 	stopCurveEdit() {
-		console.log("stopCurveEdit", this.editingCurve);
-		if (this.editingCurve) console.log(this.elements[this.editingCurve].positionC1);
-		this.editingCurve = null;
+		this.editingElement1 = null;
+		this.editingElement2 = null;
 		this.editingControl1 = false;
 		this.editingControl2 = false;
 		this.controlPoint1.element.setAttributeNS(null, "visibility", "hidden");
 		this.controlPoint2.element.setAttributeNS(null, "visibility", "hidden");
 		this.controlPoint1Line.element.setAttributeNS(null, "visibility", "hidden");
 		this.controlPoint2Line.element.setAttributeNS(null, "visibility", "hidden");
+	}
+	
+	editCurveControl1(id) {
+		let element = this.elements[id];
+		let firstPoint = this.elements[element.point1];
+		let tangent = normalized(element.getTangentAt(0));
+		// -- edit control 1 of the curve
+		if (unconstrainedPointTypes.includes(firstPoint.type)) {
+			this.controlPoint1.moveBy(this.dx, this.dy);
+		} else if (firstPoint.type == ObjectTypes.LastSatellitePoint) {
+			let v = this.projectDirOnTangent(tangent, this.dx, this.dy);
+			this.controlPoint1.moveBy(v.x, v.y);
+		}
+		this.controlPoint1Line.position2 = this.controlPoint1.position;
+		element.positionC1 = this.controlPoint1.position;
+		
+		if (firstPoint.type == ObjectTypes.LastFreePoint) {
+			let curve = this.elements[firstPoint.curve];
+			// -- edit direction of tangent 2 of previous curve
+			let tangentLength = distance(curve.position2, curve.positionC2);
+			curve.positionC2 = {
+				x: curve.position2.x - tangent.x*tangentLength,
+				y: curve.position2.y - tangent.y*tangentLength
+			};
+			// -- edit direction of tangent 1 of sibling curves
+			for (const childId of firstPoint.children) {
+				if (childId != element.point2) {
+					let child = this.elements[childId];
+					let curve = this.elements[child.curve];
+					if (child.type == ObjectTypes.LastFreePoint) {
+						let tangentLength = distance(curve.position1, curve.positionC1);
+						curve.positionC1 = {
+							x: curve.position1.x + tangent.x*tangentLength,
+							y: curve.position1.y + tangent.y*tangentLength
+						};
+					}
+				}
+			}
+		}
+		
+		// -- update control 2
+		if (this.editingElement2) {
+			var curve2 = this.elements[this.editingElement2];
+			this.controlPoint2.position = curve2.positionC2;
+			// this.controlPoint2Line.position1 = curve2.position2;
+			this.controlPoint2Line.position2 = curve2.positionC2;
+		}
+	}
+	
+	editCurveControl2(id) {
+		let element = this.elements[id];
+		// -- edit control 2 of the curve
+		this.controlPoint2.moveBy(this.dx, this.dy);
+		this.controlPoint2Line.position2 = this.controlPoint2.position;
+		element.positionC2 = this.controlPoint2.position;
+		// -- edit direction of tangent 1 of child curves
+		let tangent = normalized(element.getTangentAt(1));
+		let lastPoint = this.elements[element.point2];
+		for (const childId of lastPoint.children) {
+			let child = this.elements[childId];
+			let curve = this.elements[child.curve];
+			if (child.type == ObjectTypes.LastFreePoint) {
+				let tangentLength = distance(curve.position1, curve.positionC1);
+				curve.positionC1 = {
+					x: curve.position1.x + tangent.x*tangentLength,
+					y: curve.position1.y + tangent.y*tangentLength
+				};
+			}
+		}
+		
+		// -- update control 1
+		if (this.editingElement1) {
+			var curve1 = this.elements[this.editingElement1];
+			this.controlPoint1.position = curve1.positionC1;
+			// this.controlPoint1Line.position1 = curve1.position1;
+			this.controlPoint1Line.position2 = curve1.positionC1;
+		}
 	}
 	
 	// -- create
@@ -1159,63 +1608,159 @@ class mySVG {
 	createCurveGui() {
 		let l;
 		
-		l = Line.new(this.elements, this.guiGroup, {x:20, y:30}, {x:50, y:10});
+		l = Line.new({}, this.guiGroup, {x:20, y:30}, {x:50, y:10});
 		l.element.classList.add("gui");
+		l.id = "controlPoint1Line";
+		l.element.id = l.id;
+		this.elements[l.id] = l;
 		this.controlPoint1Line = l;
 		
-		l = Line.new(this.elements, this.guiGroup, {x:10, y:10}, {x:40, y:30});
+		l = Line.new({}, this.guiGroup, {x:10, y:10}, {x:40, y:30});
 		l.element.classList.add("gui");
+		l.id = "controlPoint2Line";
+		l.element.id = l.id;
+		this.elements[l.id] = l;
 		this.controlPoint2Line = l;
 		
 		let pt;
 		
-		pt = Point.new(this.elements, this.guiGroup, {x:50, y:10}, 4);
+		pt = Point.new({}, this.guiGroup, {x:50, y:10}, 2);
 		pt.element.classList.add("gui");
+		pt.id = "controlPoint1";
+		pt.element.id = pt.id;
+		this.elements[pt.id] = pt;
 		this.controlPoint1 = pt;
 		
-		pt = Point.new(this.elements, this.guiGroup, {x:10, y:10}, 4);
+		pt = Point.new({}, this.guiGroup, {x:10, y:10}, 2);
 		pt.element.classList.add("gui");
+		pt.id = "controlPoint2";
+		pt.element.id = pt.id;
+		this.elements[pt.id] = pt;
 		this.controlPoint2 = pt;
 	};
+	
+	createShadowPointGui() {
+		let l = Line.new({}, this.guiGroup, {x:20, y:30}, {x:50, y:10});
+		l.element.classList.add("gui");
+		l.id = "shadowLine";
+		l.element.id = l.id;
+		this.elements[l.id] = l;
+		this.shadowLine = l;
+		
+		let pt = Point.new({}, this.guiGroup, {x:10, y:10}, 4);
+		pt.element.classList.add("gui");
+		pt.id = "shadowPoint";
+		pt.element.id = pt.id;
+		this.elements[pt.id] = pt;
+		this.shadowPoint = pt;
+	}
 	
 	createFreePoint(parentId, pos) {
 		let pt;
 		let parent = this.elements[parentId];
 		
 		// -- create free point connected to parent
-		pt = LastFreePoint.new(this.elements, this.lineGroup, this.pointGroup,
-													 parent, pos, 4);
+		let startTangent, endTangent;
+		let d = distance(parent.pos, pos);
+		if (parentId == this.basePoint) {
+			let s = Math.sign(pos.y-parent.pos.y);
+			startTangent = {x: 0, y: d/3*s};
+			endTangent = rotate(startTangent, Math.PI/2*s);
+		} else if (infinitelyClosePointTypes.includes(parent.type)) {
+			startTangent = this.elements[parent.curve].getTangentAt(1);
+			
+			startTangent = normalized(startTangent);
+			let n = directionFromTo(parent.position, pos);
+			n = {x: n.y, y: -n.x};
+			endTangent = {
+				x: -(parent.position.x + startTangent.x*d*2/3 - pos.x),
+				y:  -(parent.position.y + startTangent.y*d*2/3 - pos.y)
+			};
+			startTangent = {x: startTangent.x*d/3, y: startTangent.y*d/3};
+			// startTangent = normalized(startTangent);
+			// let n = directionFromTo(parent.position, pos);
+			// n = {x: n.y, y: -n.x};
+			// let start_dot_n = startTangent.x * n.x + startTangent.y * n.y;
+			// let c = 3 - Math.abs(start_dot_n);
+			// startTangent = {x: startTangent.x*d/c, y: startTangent.y*d/c};
+			// start_dot_n = start_dot_n*d/c;
+			// endTangent = {
+			// 	x: startTangent.x - 2*start_dot_n*n.x,
+			// 	y: startTangent.y - 2*start_dot_n*n.y,
+			// };
+		}
+		pt = LastFreePoint.new(this.elements, this.lineGroup, this.pointGroup, parent, pos, 4, startTangent, endTangent);
 		this.points.push(pt.id);
-		this.lines.push(pt.line);
+		this.lines.push(pt.curve);
 		
 		return pt;
 	}
 	
-	createExampleDiagram() {
-		let pt = this.createFreePoint(this.basePoint, {x: 20, y: 50});
-		let pt4 = this.createFreePoint(pt.id, {x: 40, y: 80});
-		pt4 = this.createFreePoint(pt4.id, {x: 60, y: 90});
-		pt4 = this.createFreePoint(pt4.id, {x: 130, y: 90});
-		pt4 = this.createFreePoint(pt4.id, {x: 140, y: 70});
-		pt = this.createFreePoint(pt.id, {x: 35, y: 30});
-		pt = this.createFreePoint(pt.id, {x: 50, y: 20});
-		pt = this.createFreePoint(pt.id, {x: 70, y: 20});
-		this.createFreePoint(pt.id, {x: 70, y: 40});
-		pt = this.createFreePoint(pt.id, {x: 90, y: 20});
-		this.createFreePoint(pt.id, {x: 100, y: 10});
-		let pt2 = this.createFreePoint(pt.id, {x: 90, y: 40});
-		let pt3 = this.createFreePoint(pt2.id, {x: 90, y: 60});
-		this.createFreePoint(pt2.id, {x: 110, y: 60});
-		this.createFreePoint(pt2.id, {x: 110, y: 40});
-		pt = this.createFreePoint(pt.id, {x: 110, y: 20});
-		pt = this.createFreePoint(pt.id, {x: 130, y: 20});
+	createSatellitePoint(parentId, pos) {
+		let pt;
+		let parent = this.elements[parentId];
+		
+		let projPos = this.projectPosOnNormal(parentId, pos);
+		
+		// -- create satellite point connected to parent
+		pt = LastSatellitePoint.new(this.elements, this.lineGroup, this.pointGroup, parent, projPos, 4);
+		this.points.push(pt.id);
+		this.lines.push(pt.curve);
+		
+		return pt;
 	}
 	
-	// hideToolGUI() {
-	// 	this.movingAnElement = false;
-	// 	this.unselectAll();
-	// 	this.stopSelectionInRectangle();
-	// }
+	projectPosOnNormal(parentId, pos) {
+		let parent = this.elements[parentId];
+		let tangent = this.elements[parent.curve].getTangentAt(1);
+		tangent = normalized(tangent);
+		let n = {x: tangent.y, y: -tangent.x};
+		let proj = (pos.x-parent.position.x) * n.x +
+					(pos.y-parent.position.y) * n.y;
+		let projPos = {
+			x: parent.position.x + proj * n.x,
+			y: parent.position.y + proj * n.y
+		};
+		return projPos;
+	}
+	
+	projectDirOnTangent(tangent, dx, dy) {
+		let proj = dx * tangent.x + dy * tangent.y;
+		let v = {
+			x: proj * tangent.x,
+			y: proj * tangent.y
+		};
+		return v;
+	}
+	
+	createExampleDiagram() {
+		let pt = this.createSatellitePoint(this.basePoint, {x: 20, y: 50});
+		let pt4 = this.createSatellitePoint(pt.id, {x: 40, y: 80});
+		pt4 = this.createSatellitePoint(pt4.id, {x: 60, y: 90});
+		pt4 = this.createSatellitePoint(pt4.id, {x: 130, y: 90});
+		pt4 = this.createSatellitePoint(pt4.id, {x: 140, y: 70});
+		pt = this.createSatellitePoint(pt.id, {x: 35, y: 30});
+		pt = this.createSatellitePoint(pt.id, {x: 50, y: 20});
+		pt = this.createSatellitePoint(pt.id, {x: 70, y: 20});
+		this.createSatellitePoint(pt.id, {x: 70, y: 40});
+		pt = this.createSatellitePoint(pt.id, {x: 90, y: 20});
+		this.createSatellitePoint(pt.id, {x: 100, y: 10});
+		let pt2 = this.createSatellitePoint(pt.id, {x: 90, y: 40});
+		let pt3 = this.createSatellitePoint(pt2.id, {x: 90, y: 60});
+		this.createSatellitePoint(pt2.id, {x: 110, y: 60});
+		this.createSatellitePoint(pt2.id, {x: 110, y: 40});
+		pt = this.createSatellitePoint(pt.id, {x: 110, y: 20});
+		pt = this.createSatellitePoint(pt.id, {x: 130, y: 20});
+	}
+	
+	hideToolGUI() {
+		// this.movingAnElement = false;
+		// this.unselectAll();
+		this.stopSelectionInRectangle();
+		this.stopCurveEdit();
+		this.shadowPoint.element.setAttributeNS(null, "visibility", "hidden");
+		this.shadowLine.element.setAttributeNS(null, "visibility", "hidden");
+	}
 	
 	// -- get mouse position in SVG coordinates
 	getMousePosition(evt) {
@@ -1226,10 +1771,6 @@ class mySVG {
 			x: (evt.clientX - CTM.e) / CTM.a,
 			y: (evt.clientY - CTM.f) / CTM.d
 		};
-	}
-	
-	distance2(pos1, pos2) {
-		return (pos1.x-pos2.x)**2 + (pos1.y - pos2.y)**2;
 	}
 }
 
