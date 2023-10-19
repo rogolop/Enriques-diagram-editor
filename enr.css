@@ -6,6 +6,8 @@ body {
   background-color: #36373a;
 }
 
+/*********************************************************************/
+
 .static {
   cursor: not-allowed;
 }
@@ -17,13 +19,120 @@ svg {
   max-width: 800px;
 }
 
-/*********************************************************************/
-
-
 .mySVG .background {
   fill: #ffeeee; /* #f8f8f8; */
 }
 
+.selectRectangle {
+  fill: #00000020;
+}
+
+.draggable {
+  cursor: pointer
+}
+
+.draggable:hover {
+  /* fill: none; */
+  stroke: #00000020;
+  stroke-width: 2pt;
+  /* stroke-dasharray: 2,2; */
+  stroke-linejoin: round;
+  paint-order: stroke;
+  /* outline: 1pt dashed #00000030; */
+}
+
+button {
+  background: #5c5;
+  height: 2em;
+  width: 7em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-evenly;
+  margin: 0 0pt;
+  border-radius: 5px;
+  cursor: pointer;
+  padding: 0 10px;
+  border: 2px solid #8f8;
+  font-size: 15px;
+  color: black;
+}
+
+/**********************************/
+/*      Custom radio buttons      */
+/**********************************/
+
+.toolLabel {
+  background: #fff;
+  height: 2em;
+  width: 7em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-evenly;
+  margin: 0 3pt;
+  border-radius: 5px;
+  cursor: pointer;
+  padding: 0 10px;
+  border: 2px solid lightgrey;
+  transition: all 0.3s ease;
+}
+
+.toolLabel span{
+  font-size: 20px;
+  color: black;
+}
+
+#mainTool:checked:checked ~ label[for=mainTool],
+#eraser:checked:checked ~ label[for=eraser],
+#connector:checked:checked ~label[for=connector],
+#select:checked:checked ~ label[for=select] {
+  border-color: #0069d9;
+  background: #0069d9;
+}
+
+#mainTool:checked:checked ~ label[for=mainTool] span,
+#eraser:checked:checked ~ label[for=eraser] span,
+#connector:checked:checked ~label[for=connector] span,
+#select:checked:checked ~ label[for=select] span {
+  color: white;
+  transition: all 0.3s ease;
+}
+
+input[type="radio"]{
+  display: none;
+}
+
+.prevent-select {
+  /* Prevent text selection */
+  -webkit-user-select: none; /* Safari */
+  -ms-user-select: none; /* IE 10 and IE 11 */
+  user-select: none; /* Standard syntax */
+}
+
+.selected {
+  fill: green;
+}
+
+
+
+
+
+
+
+
+
+
+
+/*********************************************************************/
+/* interactiveSVG */
+/*********************************************************************/
+
+/*  Color of element determined by role:
+  Orange: draggable, can be dragged directly,
+  Blue: controllable, moved indrectly by draggable elements, 
+  Green: generated, positioned determined by position of other elements
+  Pink: highlight,
+  Grey: static
+*/
 
 .interactiveSVG .background {
   fill: #eeffee; /* #f8f8f8; */
@@ -38,28 +147,6 @@ svg {
 .interactiveSVG .line {
   fill: none;
   stroke-width: 2;
-}
-
-/*  Color of element determined by role:
-  Orange: draggable, can be dragged directly,
-  Blue: controllable, moved indrectly by draggable elements, 
-  Green: generated, positioned determined by position of other elements
-  Pink: highlight,
-  Grey: static
-*/
-
-.draggable {
-  cursor: pointer
-}
-
-.draggable:hover {
-  /* fill: none; */
-  stroke: #00000020;
-  stroke-width: 2pt;
-  /* stroke-dasharray: 2,2; */
-  stroke-linejoin: round;
-  paint-order: stroke;
-  /* outline: 1pt dashed #00000030; */
 }
 
 .interactiveSVG .draggable-point {
@@ -109,83 +196,3 @@ svg {
   stroke-width: 1px;
   pointer-events: none;
 }
-
-
-
-
-button {
-  background: #5c5;
-  height: 2em;
-  width: 7em;
-  display: inline-flex;
-  align-items: center;
-  justify-content: space-evenly;
-  margin: 0 0pt;
-  border-radius: 5px;
-  cursor: pointer;
-  padding: 0 10px;
-  border: 2px solid #8f8;
-  font-size: 15px;
-  color: black;
-}
-
-/**********************************/
-/*      Custom radio buttons      */
-/**********************************/
-
-.toolLabel {
-  background: #fff;
-  height: 2em;
-  width: 7em;
-  display: inline-flex;
-  align-items: center;
-  justify-content: space-evenly;
-  margin: 0 3pt;
-  border-radius: 5px;
-  cursor: pointer;
-  padding: 0 10px;
-  border: 2px solid lightgrey;
-  transition: all 0.3s ease;
-}
-
-#mainTool:checked:checked ~ .mainTool,
-#eraser:checked:checked ~ .eraser,
-#connector:checked:checked ~ .connector {
-  border-color: #0069d9;
-  background: #0069d9;
-}
-
-.toolLabel span{
-  font-size: 20px;
-  color: black;
-}
-
-#mainTool:checked:checked ~ .mainTool span,
-#eraser:checked:checked ~ .eraser span,
-#connector:checked:checked ~ .connector span {
-  color: white;
-  transition: all 0.3s ease;
-}
-
-input[type="radio"]{
-  display: none;
-}
-
-
-
-
-
-/* Prevent text(?) selection */
-.prevent-select {
-  -webkit-user-select: none; /* Safari */
-  -ms-user-select: none; /* IE 10 and IE 11 */
-  user-select: none; /* Standard syntax */
-}
-
-
-
-
-
-
-
-

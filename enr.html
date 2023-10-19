@@ -19,21 +19,25 @@
 
 
 <body>
-  <button onClick="downloadInnerHtml('exp.svg', 'mainSVG', 'image/svg+xml')">Download</button>
+  <button onClick="downloadInnerHtml('exp.svg', 'svggg', 'image/svg+xml')">Download</button>
   <!-- <a href="#" id="downloadLink">Download the inner html</a> -->
   
   <!-- <button onClick="toggleErasing()">Toggle erase</button> -->
   <input type="radio" name="tool" id="mainTool"  value="mainTool">
   <input type="radio" name="tool" id="eraser"    value="eraser">
   <input type="radio" name="tool" id="connector" value="connector">
+  <input type="radio" name="tool" id="select" value="select">
   
-  <label for="mainTool" class="toolLabel mainTool">
+  <label for="mainTool" class="toolLabel">
     <span class="prevent-select">mainTool</span>
   </label>
-  <label for="eraser" class="toolLabel eraser">
+  <label for="eraser" class="toolLabel">
     <span class="prevent-select">eraser</span>
   </label>
-  <label for="connector" class="toolLabel connector">
+  <label for="select" class="toolLabel">
+    <span class="prevent-select">select</span>
+  </label>
+  <label for="connector" class="toolLabel">
     <span class="prevent-select">connector</span>
   </label>
   
@@ -43,21 +47,20 @@
   <br>
   <br>
   
-  <svg id="mainSVG" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100" onload="makeInteractive(evt)" onmouseenter="selectSVG(evt)">
+  <!-- <svg id="mainSVG" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100" onload="makeInteractive(evt)" onmouseenter="selectSVG(evt)">
     <rect id="background" width="100%" height="100%" fill="#eee">
       <title>Background</title>
     </rect>
-    <!-- <line 
-      x1="10" y1="50"
-      x2="20" y2="80"
-      stroke="black" />
-    <g id="item"></g> -->
     
     <rect class="draggable confine" x="5" y="55" width="8" height="10" fill="#007bff"/>
     <circle class="draggable confine" cx="10" cy="70" r="5" fill="#900"></circle>
     <rect class="static" x="18" y="55" width="8" height="10"   fill="#888"/>
-  </svg>
-  
+  </svg> -->
+  <!-- <line 
+      x1="10" y1="50"
+      x2="20" y2="80"
+      stroke="black" />
+    <g id="item"></g> -->
   
 
   <div id="taco" class="svg-wrapper" style="width: 50%"></div>
@@ -67,11 +70,9 @@
     (function() {
       // var svg = InteractiveSVG.create('taco', 100, 100);
       // var svg = InteractiveSVG.create('taco', 100, 100, 'potato');
-      var svg = new mySVG('taco', 100, 100);
-      var svg = new mySVG('taco', 100, 100, 'my');
-      var svg = new mySVG('taco', 100, 100);
-      var svg = new mySVG('taco', 100, 100);
-      console.log(svg.elements);
+      var svg = new mySVG('taco', 100, 100, 'svggg');
+      // var svg = new mySVG('taco', 100, 100);
+      // console.log(svg.elements);
     //   var A = svg.addPoint({ x: 40, y: 75 });
     //   var B = svg.addPoint({ x: 160, y: 75 });
     //   svg.addLine({p1: A, p2: B});

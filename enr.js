@@ -10,7 +10,6 @@ function bginfo(activate) {
 	}
 }
 
-
 // Boundary for object with class "confine"
 var boundaryX1 = 5;
 var boundaryX2 = 50;
@@ -21,8 +20,10 @@ var boundaryY2 = 90;
 const Tool = {
 	Main: "mainTool",
 	Eraser: "eraser",
-	Connector: "connector"
+	Connector: "connector",
+	Select: "select"
 };
+const Tools = Object.keys(Tool).map(function(key){return Tool[key];});
 
 const MouseButton = {
 	Left: 1,
@@ -33,7 +34,6 @@ const MouseButton = {
 };
 
 const xmlns = 'http://www.w3.org/2000/svg';
-
 
 // // Know mouse state
 // function setPrimaryButtonState(evt) {
@@ -64,74 +64,49 @@ function selectSVG(evt) {
 	// alert(svg.id);
 }
 
-
-
-
-
-// Things to do once the window loads
-window.addEventListener("load", function() {
-	// Code to be executed once the window is loaded (=> once the svg exists?)
+// // Things to do once the window loads
+// window.addEventListener("load", function() {
+// 	// Code to be executed once the window is loaded (=> once the svg exists?)
 	
-	// console.log("fdocumenirst");
-	// svg = document.getElementById('mainSVG');
-	// console.log(svg);
+// 	// console.log("fdocumenirst");
+// 	// svg = document.getElementById('mainSVG');
+// 	// console.log(svg);
 	
-	var item = document.getElementById('item');
+// 	var item = document.getElementById('item');
 	
-	
-	//### Draw boundary rectangle for confined objects
-	// var element = document.createElementNS(xmlns, 'rect');
-	// element.setAttributeNS(null, 'x', boundaryX1);
-	// element.setAttributeNS(null, 'y', boundaryY1);
-	// element.setAttributeNS(null, 'width', boundaryX2 - boundaryX1);
-	// element.setAttributeNS(null, 'height', boundaryY2 - boundaryY1);
-	// element.setAttributeNS(null, 'fill', '#ccc');
-	// // document.getElementById('background').appendChild(element);
-	// // svg.appendChild(element);
-	// // svg.insertBefore(element, svg.firstChild);
-	// svg.insertBefore(element, document.getElementById('background').nextSibling);
+// 	//### Draw boundary rectangle for confined objects
+// 	// var element = document.createElementNS(xmlns, 'rect');
+// 	// element.setAttributeNS(null, 'x', boundaryX1);
+// 	// element.setAttributeNS(null, 'y', boundaryY1);
+// 	// element.setAttributeNS(null, 'width', boundaryX2 - boundaryX1);
+// 	// element.setAttributeNS(null, 'height', boundaryY2 - boundaryY1);
+// 	// element.setAttributeNS(null, 'fill', '#ccc');
+// 	// // document.getElementById('background').appendChild(element);
+// 	// // svg.appendChild(element);
+// 	// // svg.insertBefore(element, svg.firstChild);
+// 	// svg.insertBefore(element, document.getElementById('background').nextSibling);
 
-	//### Draw black circle
-	var element = document.createElementNS(xmlns, 'circle');
-	element.setAttributeNS(null, 'cx', 50);
-	element.setAttributeNS(null, 'cy', 30);
-	element.setAttributeNS(null, 'r', 5);
-	element.setAttributeNS(null, 'id', 'target');
-	element.setAttributeNS(null, 'class', 'draggable');
-	svg.appendChild(element);
+// 	//### Draw black circle
+// 	var element = document.createElementNS(xmlns, 'circle');
+// 	element.setAttributeNS(null, 'cx', 50);
+// 	element.setAttributeNS(null, 'cy', 30);
+// 	element.setAttributeNS(null, 'r', 5);
+// 	element.setAttributeNS(null, 'id', 'target');
+// 	element.setAttributeNS(null, 'class', 'draggable');
+// 	svg.appendChild(element);
 	
-	//### Draw black circle using jQuery
-	var $element = $(document.createElementNS(xmlns, 'circle'));
-	$element.attr({
-		cx: 100,
-		cy: 30,
-		r: 5,
-		id: 'target',
-		class: 'draggable'
-	});
-	$element.appendTo(svg);
-	// svg.appendChild($element);
-
-	//### Write Hello World
-	// var element = document.createElementNS(xmlns, 'text');
-	// element.setAttributeNS(null, 'x', 5);
-	// element.setAttributeNS(null, 'y', 15);
-	// element.setAttributeNS(null, 'class', 'draggable');
-	// var txt = document.createTextNode("Hello World");
-	// element.appendChild(txt);
-	// svg.appendChild(element);
-
-	//### Not
-	// var y = parseFloat(item.getAttributeNS(null, 'y1'));
-	// item.setAttributeNS(null, 'y1', y + 20);
-	// var element = document.getElementById('item');
-	// svg.removeChild(element);
-	
-	//### Dowload when link pressed
-	// document.getElementById('downloadLink').addEventListener('mouseup', function() {
-	//   downloadInnerHtml('exp.svg', 'main', 'image/svg+xml');
-	// });
-});
+// 	//### Draw black circle using jQuery
+// 	var $element = $(document.createElementNS(xmlns, 'circle'));
+// 	$element.attr({
+// 		cx: 100,
+// 		cy: 30,
+// 		r: 5,
+// 		id: 'target',
+// 		class: 'draggable'
+// 	});
+// 	$element.appendTo(svg);
+// 	// svg.appendChild($element);
+// });
 
 var moveSlider = function(slider, direction) {
 	var value = slider.value;
@@ -140,212 +115,18 @@ var moveSlider = function(slider, direction) {
 	circle.setAttributeNS(null, coord, value);
 }
 
-
-// Simple versions of startDrag() and drag() only work if the <tag> has x and y
-//
-// function startDrag(evt) {
-//   if (evt.target.classList.contains('draggable')) {
-//     selectedElement = evt.target;
-//     offset = getMousePosition(evt);
-//     offset.x -= parseFloat(selectedElement.getAttributeNS(null, "x"));
-//     offset.y -= parseFloat(selectedElement.getAttributeNS(null, "y"));
-//   }
-// }
-//
-// function drag(evt) {
-//   if (selectedElement) {
-//     // console.log("drag");
-//     evt.preventDefault(); // prevent other dragging behaviour like selecting text
-//     var coord = getMousePosition(evt);
-//     selectedElement.setAttributeNS(null, "x", coord.x - offset.x);
-//     selectedElement.setAttributeNS(null, "y", coord.y - offset.y);
-//   }
-// }
-//
-// Below -> Better versions of startDrag() and drag() using transform (not valid for gropus and foreignObjects)
-
-
-function makeInteractive(evt) {
-	svg = evt.target;
-	svg.addEventListener('mousedown', doOnClick);
-	svg.addEventListener('mousemove', doOnDrag);
-	svg.addEventListener('mouseup', doOnEndDrag);
-	svg.addEventListener('mouseleave', doOnEndDrag);
-	
-	// For touch
-	svg.addEventListener('touchstart', doOnClick);
-	svg.addEventListener('touchmove', doOnDrag);
-	svg.addEventListener('touchend', doOnEndDrag);
-	svg.addEventListener('touchleave', doOnEndDrag);
-	svg.addEventListener('touchcancel', doOnEndDrag);
-	
-	var selectedElement, offset, transform, confined;
-	var minX, maxX, minY, maxY;
-
-	// Get mouse position in the SVG's coordinate system
-	function getMousePosition(evt) {
-		var CTM = svg.getScreenCTM(); // Current Transformation Matrix
-		// Invert the SVG->screen transformation
-		if (evt.touches) { evt = evt.touches[0]; }
-		return {
-			x: (evt.clientX - CTM.e) / CTM.a,
-			y: (evt.clientY - CTM.f) / CTM.d
-		};
-	}
-	
-	
-	// -- do when mouse button is pressed down
-	function doOnClick(evt) {
-		// -- Select the clicked element
-		if (evt.target.classList.contains('draggable')) {
-			selectedElement = evt.target;
-		} else {
-			selectedElement = null;
-		}
-		
-		// -- Act depending on tool
-		switch (GlobalState.tool) {
-			case Tool.Main:
-				mainToolClick(evt);
-				break;
-			case Tool.Eraser:
-				eraserClick(evt);
-				break;
-			case Tool.Connector:
-				//
-				break;
-			default:
-				break;
-		}
-	}
-	
-	function createCircle(pos, r, draggable) {
-		let element = document.createElementNS(xmlns, 'circle');
-		element.setAttributeNS(null, 'cx', pos.x);
-		element.setAttributeNS(null, 'cy', pos.y);
-		element.setAttributeNS(null, 'r', r);
-		if (draggable) {
-			element.setAttributeNS(null, 'class', 'draggable');
-		}
-		svg.appendChild(element);
-		return element;
-	}
-	
-	function mainToolClick(evt) {
-		if (evt.buttons & MouseButton.Left) {
-			// -- click on background
-			if (evt.target.id == 'background') {
-				// -- create circle at mouse position
-				let pos = getMousePosition(evt);
-				let element = createCircle(pos, 2.5, true);
-				// -- select created circle
-				selectedElement = element;
-			}
-			
-			// -- click on object (or newly created from background)
-			if (selectedElement) {
-				// -- For confined objects, calculate maximum displacements
-				confined = selectedElement.classList.contains('confine');
-				if (confined) {
-					let bbox = selectedElement.getBBox(); // bounding box of element
-					minX = boundaryX1 - bbox.x;
-					maxX = boundaryX2 - bbox.x - bbox.width;
-					minY = boundaryY1 - bbox.y;
-					maxY = boundaryY2 - bbox.y - bbox.height;
-				}
-				
-				// -- Calculate mouse offset wrt. object position
-				// -- (to prevent object position from "snapping" to mouse position)
-				offset = getMousePosition(evt);
-				// Get all the transforms currently on this element
-				var transforms = selectedElement.transform.baseVal;
-				// Ensure the first transform is a translate transform
-				if (transforms.length === 0 || transforms.getItem(0).type !== SVGTransform.SVG_TRANSFORM_TRANSLATE) {
-					// Create an transform that translates by (0, 0)
-					let translate = svg.createSVGTransform();
-					translate.setTranslate(0, 0);
-					// Add the translation to the front of the transforms list
-					selectedElement.transform.baseVal.insertItemBefore(translate, 0);
-				}
-				// Get initial translation amount
-				transform = transforms.getItem(0);
-				// Compare mouse position and object position
-				offset.x -= transform.matrix.e;
-				offset.y -= transform.matrix.f;
-			}
-		}
-	}
-	
-	function eraserClick(evt) {
-		if (evt.buttons & MouseButton.Left) {
-			// -- click on object
-			if (selectedElement) {
-				// -- remove object
-				selectedElement.parentNode.removeChild(selectedElement);
-				selectedElement = null;
-			}
-		}
-	}
-	
-	function doOnDrag(evt) {
-		// -- Act depending on tool
-		switch (GlobalState.tool) {
-			case Tool.Main:
-				mainToolDrag(evt);
-				break;
-			case Tool.Eraser:
-				eraserDrag(evt);
-				break;
-			case Tool.Connector:
-				//
-				break;
-			default:
-				break;
-		}
-	}
-	
-	function mainToolDrag(evt) {
-		if (evt.buttons & MouseButton.Left) {
-			// -- drag object
-			if (selectedElement) {
-				evt.preventDefault();
-				let pos = getMousePosition(evt);
-				let dx = pos.x - offset.x;
-				let dy = pos.y - offset.y;
-				// -- confine movement
-				if (confined) {
-					if (dx < minX) { dx = minX; }
-					else if (dx > maxX) { dx = maxX; }
-					if (dy < minY) { dy = minY; }
-					else if (dy > maxY) { dy = maxY; }
-				}
-				// -- move object
-				transform.setTranslate(dx, dy);
-			}
-		}
-	}
-	
-	function eraserDrag(evt) {
-		// -- drag over draggable object
-		if ((evt.buttons & MouseButton.Left) && evt.target.classList.contains('draggable')) {
-			// -- remove object
-			selectedElement = evt.target;
-			selectedElement.parentNode.removeChild(selectedElement);
-			selectedElement = null;
-		}
-	}
-	
-	function doOnEndDrag(evt) {
-		selectedElement = null;
-	}
-}
-
-
-
 // Download html element with a given id (and its children)
-// Source: https://stackoverflow.com/questions/22084698/how-to-export-source-content-within-div-to-text-html-file
+// Partial Source: https://stackoverflow.com/questions/22084698/how-to-export-source-content-within-div-to-text-html-file
 function downloadInnerHtml(filename, elId, mimeType) {
 	var elHtml = document.getElementById(elId).outerHTML; //.innerHTML; // outerHTML inludes the html element itself, innerHTML only includes children
+	
+	var cssString;
+	// cssString = $.get("/enr.css");
+	cssString = $.ajax({type: "GET", url: "/enr.css", async: false}).responseText;
+	// console.log(cssString);
+	
+	elHtml = elHtml.replace("</svg>", "<style>"+cssString+"</style></svg>");
+	
 	var link = document.createElement('a');
 	mimeType = mimeType || 'text/plain';
 
@@ -354,50 +135,138 @@ function downloadInnerHtml(filename, elId, mimeType) {
 	link.click(); 
 }
 
-
-
-
 /////////////////////////////////////////////////////////////////////
 
 // When document is loaded
 $(document).ready(function() {
-	
 	// Initialize radio buttons "tool"
 	$('input:radio[name=tool]').val([initGlobalState.tool]);
 	
 	// Function called when radio buttons "tool" change value
 	$('input[type=radio][name=tool]').change(function() {
-		if (this.value == Tool.Main) {
-			GlobalState.tool = Tool.Main;
-		} else if (this.value == Tool.Eraser) {
-			GlobalState.tool = Tool.Eraser;
-		} else if (this.value == Tool.Connector) {
-			GlobalState.tool = Tool.Connector;
+		// console.log(Tools);
+		if (Tools.includes(this.value)) {
+			GlobalState.tool = this.value;
 		}
 	});
 });
 
-
-
 ////////////////////////////////////////////////////////////////////
 
-
 class myElement {
-	constructor(_pos) {
+	static instanceNumber = 0;
+	static newID() {
+		let n = myElement.instanceNumber;
+		myElement.instanceNumber++;
+		return n;
+	}
+	
+	static new(_elements, _svg, _pos) {
+		let elt = new myElement(_svg, "myElement"+Point.newID(), _pos);
+		_elements[elt.id] = elt;
+		return elt;
+	}
+	
+	constructor(_svg, _id, _pos) {
+		this.svg = _svg;
+		this.element = false; // svg element
+		this.id = _id
 		this.pos = _pos;
+	}
+	
+	get position() {
+		return this.pos;
+		// // Get all the transforms currently on this element
+		// var transforms = this.element.transform.baseVal;
+		// // Ensure the first transform is a translate transform
+		// if (transforms.length === 0 || transforms.getItem(0).type !== SVGTransform.SVG_TRANSFORM_TRANSLATE) {
+		// 	// Create an transform that translates by (0, 0)
+		// 	let translate = this.svg.createSVGTransform();
+		// 	translate.setTranslate(0, 0);
+		// 	// Add the translation to the front of the transforms list
+		// 	this.element.transform.baseVal.insertItemBefore(translate, 0);
+		// }
+		// // Get initial translation amount
+		// this.transform = transforms.getItem(0);
+		// // Compare mouse position and object position
+		// return {
+		// 	x: this.transform.matrix.e,
+		// 	y: this.transform.matrix.f
+		// };
+	}
+	
+	set position(_pos) {
+		this.moveTo(_pos.x, _pos.y);
+	}
+	
+	moveBy(dx, dy) {
+		this.moveTo(this.pos.x+dx, this.pos.y+dy);
+	}
+	
+	// move to position
+	moveTo(x, y) {
+		// // -- confine movement
+		// if (this.confined) {
+		// 	if (dx < this.minX) { dx = this.minX; }
+		// 	else if (dx > this.maxX) { dx = this.maxX; }
+		// 	if (dy < this.minY) { dy = this.minY; }
+		// 	else if (dy > this.maxY) { dy = this.maxY; }
+		// }
+		// -- move object
+		// this.transform.setTranslate(dx, dy);
+		this.pos.x = x;
+		this.pos.y = y;
 	}
 }
 
-class point extends myElement {
-	constructor(_pos, _r) {
-		super(_pos);
+class Point extends myElement {
+	static instanceNumber = 0;
+	static newID() {
+		let n = Point.instanceNumber;
+		Point.instanceNumber++;
+		return n;
+	}
+	
+	static new(_elements, _svg, _pos, _r) {
+		let pt = new Point(_svg, _pos, _r);
+		_elements[pt.id] = pt;
+		return pt;
+	}
+	
+	constructor(_svg, _pos, _r) {
+		super(_svg, "point"+Point.newID(), _pos);
 		this.r = _r;
+		this.element = this.createCircle(_pos, _r, true);
+	}
+	
+	createCircle(pos, r, draggable) {
+		let element = document.createElementNS(xmlns, 'circle');
+		element.setAttributeNS(null, 'id', this.id);
+		element.setAttributeNS(null, 'cx', pos.x);
+		element.setAttributeNS(null, 'cy', pos.y);
+		element.setAttributeNS(null, 'r', r);
+		if (draggable) {
+			element.setAttributeNS(null, 'class', 'draggable');
+		}
+		element = this.svg.appendChild(element);
+		return element;
+	}
+	
+	moveBy(dx, dy) {
+		this.moveTo(this.pos.x+dx, this.pos.y+dy);
+	}
+	
+	moveTo(x, y) {
+		this.element.setAttributeNS(null, 'cx', x);
+		this.element.setAttributeNS(null, 'cy', y);
+		this.pos.x = x;
+		this.pos.y = y;
 	}
 }
 
 class mySVG {
 	static instanceNumber = 0;
-	static newInstance() {
+	static newID() {
 		let n = mySVG.instanceNumber;
 		mySVG.instanceNumber++;
 		return n;
@@ -417,43 +286,42 @@ class mySVG {
 			xmlns: xmlns,
 			class: 'mySVG',
 			onmouseenter: 'selectSVG(evt)',
-			id: (name ? name : "svg"+mySVG.newInstance())
+			id: (name ? name : "svg"+mySVG.newID())
 		}).appendTo($container);
 		this.$svg[0].setAttribute("viewBox", "0 0 " + (width || 100).toString() + ' ' + (height || 100).toString()); // can't use .attr for uppercase letters
 		
 		this.svg = this.$svg[0];
 		
-		// -- InteractiveSVG properties
-		this.elements = [];
-		// this.selected = false;
-		this.selectedElement = false;
-		this.confined = false;
-		this.offset, this.transform, this.minX, this.maxX, this.minY, this.maxY;
 		
-		// this._addMouseEventHandlers();
+		this.elements = {};
+		// -- mainTool, erase
+		this.selectedElement = null;
+		this.lastMousePos;
+		// -- select
+		this.selected = [];
+		this.dragStart = null;
+		// this.confined = false;
+		// this.transform, this.minX, this.maxX, this.minY, this.maxY;
+		
+		// -- create elements
 		this.$background = this.addBackground();
+		this.selectRectangle = this.addSelectRectangle();
+		Point.new(this.elements, this.svg, {x:20, y:5}, 4);
+		// let pt = new Point(this.svg, {x:5, y:20}, 4);
+		// this.elements[pt.id] = pt;
+		// this.elements[0].moveBy(10,10);
+		// this.elements[1].position = {x:0, y:30};
 		// alert(this.$svg[0].id);
-		this.makeInteractive();//{target:this.svg});
-		
-		// this.svg.addEventListener('mousedown', this.asd.bind(this));
+		this.makeInteractive();
 	}
-	// asd(evt) {
-	// 	alert(this.svg.id);
-	// }
-	
-	// -- add SVG element
-	addElement(tagName) {
-		return $(document.createElementNS(xmlns, tagName)).appendTo(this.$svg);
-	};
 	
 	addBackground() {
-		let bg = this.addElement('rect').attr({
+		let bg = $(document.createElementNS(xmlns, 'rect')).appendTo(this.$svg).attr({
 			class: 'background',
 			id: 'background',
 			width: '100%',
 			height: '100%'
 		}); //width: this.$svg.attr('width'), height: this.$svg.attr('height')
-		this.elements.push(bg);
 		return bg;
 	};
 	
@@ -469,9 +337,11 @@ class mySVG {
 		this.svg.addEventListener('touchend', this.doOnEndDrag.bind(this));
 		this.svg.addEventListener('touchleave', this.doOnEndDrag.bind(this));
 		this.svg.addEventListener('touchcancel', this.doOnEndDrag.bind(this));
+		// avoid right click context menu
+		this.svg.addEventListener("contextmenu", e => e.preventDefault());
 	}
 	
-	// Get mouse position in the SVG's coordinate system
+	// -- get mouse position in SVG coordinates
 	getMousePosition(evt) {
 		var CTM = this.svg.getScreenCTM(); // Current Transformation Matrix
 		// Invert the SVG->screen transformation
@@ -482,28 +352,10 @@ class mySVG {
 		};
 	}
 	
-	createCircle(pos, r, draggable) {
-		let element = document.createElementNS(xmlns, 'circle');
-		element.setAttributeNS(null, 'cx', pos.x);
-		element.setAttributeNS(null, 'cy', pos.y);
-		element.setAttributeNS(null, 'r', r);
-		if (draggable) {
-			element.setAttributeNS(null, 'class', 'draggable');
-		}
-		this.svg.appendChild(element);
-		
-		return element;
-	}
-	
-	// -- do when mouse button is pressed down
+	// -- handle click, drag, end drag
+
 	doOnClick(evt) {
-		// -- Select the clicked element
-		if (evt.target.classList.contains('draggable')) {
-			this.selectedElement = evt.target;
-		} else {
-			this.selectedElement = null;
-		}
-		// -- Act depending on tool
+		// -- act depending on tool
 		switch (GlobalState.tool) {
 			case Tool.Main:
 				this.mainToolClick(evt);
@@ -514,13 +366,16 @@ class mySVG {
 			case Tool.Connector:
 				//
 				break;
+			case Tool.Select:
+				this.selectClick(evt);
+				break;
 			default:
 				break;
 		}
 	}
 	
 	doOnDrag(evt) {
-		// -- Act depending on tool
+		// -- act depending on tool
 		switch (GlobalState.tool) {
 			case Tool.Main:
 				this.mainToolDrag(evt);
@@ -531,13 +386,16 @@ class mySVG {
 			case Tool.Connector:
 				//
 				break;
+			case Tool.Select:
+				this.selectDrag(evt);
+				break;
 			default:
 				break;
 		}
 	}
 	
 	doOnEndDrag(evt) {
-		// -- Act depending on tool
+		// -- act depending on tool
 		switch (GlobalState.tool) {
 			case Tool.Main:
 				this.mainToolEndDrag(evt);
@@ -548,107 +406,269 @@ class mySVG {
 			case Tool.Connector:
 				//
 				break;
+			case Tool.Select:
+				this.selectEndDrag(evt);
+				break;
 			default:
 				break;
 		}
 		// this.selectedElement = null;
 	}
 	
+	// -- main tool
 	
 	mainToolClick(evt) {
+		this.lastMousePos = this.getMousePosition(evt);
 		if (evt.buttons & MouseButton.Left) {
+			
 			// -- click on background
 			if (evt.target.id == 'background') {
+				this.unselectAll();
 				// -- create circle at mouse position
 				let pos = this.getMousePosition(evt);
-				let element = this.createCircle(pos, 2.5, true);
+				// let element = this.createCircle(pos, 2.5, true);
+				let element = Point.new(this.elements, this.svg, pos, 2.5);
 				// -- select created circle
 				this.selectedElement = element;
+				
+				// -- click on draggable element
+			} else if (evt.target.classList.contains('draggable')) {
+				// -- Select the clicked element
+				// this.selectedElement = evt.target;
+				this.selectedElement = this.elements[evt.target.id];
+			} else {
+				this.selectedElement = null;
 			}
 			
-			// -- click on object (or newly created from background)
+			// -- click on element (or newly created from background)
 			if (this.selectedElement) {
 				// -- For confined objects, calculate maximum displacements
-				this.confined = this.selectedElement.classList.contains('confine');
-				if (this.confined) {
-					let bbox = this.selectedElement.getBBox(); // bounding box of element
-					this.minX = boundaryX1 - bbox.x;
-					this.maxX = boundaryX2 - bbox.x - bbox.width;
-					this.minY = boundaryY1 - bbox.y;
-					this.maxY = boundaryY2 - bbox.y - bbox.height;
-				}
+				// this.confined = false;//this.selectedElement.classList.contains('confine');
+				// if (this.confined) {
+				// 	let bbox = this.selectedElement.getBBox(); // bounding box of element
+				// 	this.minX = boundaryX1 - bbox.x;
+				// 	this.maxX = boundaryX2 - bbox.x - bbox.width;
+				// 	this.minY = boundaryY1 - bbox.y;
+				// 	this.maxY = boundaryY2 - bbox.y - bbox.height;
+				// }
 				
 				// -- Calculate mouse offset wrt. object position
 				// -- (to prevent object position from "snapping" to mouse position)
-				this.offset = this.getMousePosition(evt);
+				// this.lastMousePos = this.getMousePosition(evt);
 				// Get all the transforms currently on this element
-				var transforms = this.selectedElement.transform.baseVal;
-				// Ensure the first transform is a translate transform
-				if (transforms.length === 0 || transforms.getItem(0).type !== SVGTransform.SVG_TRANSFORM_TRANSLATE) {
-					// Create an transform that translates by (0, 0)
-					let translate = this.svg.createSVGTransform();
-					translate.setTranslate(0, 0);
-					// Add the translation to the front of the transforms list
-					this.selectedElement.transform.baseVal.insertItemBefore(translate, 0);
-				}
-				// Get initial translation amount
-				this.transform = transforms.getItem(0);
-				// Compare mouse position and object position
-				this.offset.x -= this.transform.matrix.e;
-				this.offset.y -= this.transform.matrix.f;
+				// var transforms = this.selectedElement.transform.baseVal;
+				// // Ensure the first transform is a translate transform
+				// if (transforms.length === 0 || transforms.getItem(0).type !== SVGTransform.SVG_TRANSFORM_TRANSLATE) {
+				// 	// Create an transform that translates by (0, 0)
+				// 	let translate = this.svg.createSVGTransform();
+				// 	translate.setTranslate(0, 0);
+				// 	// Add the translation to the front of the transforms list
+				// 	this.selectedElement.transform.baseVal.insertItemBefore(translate, 0);
+				// }
+				// // Get initial translation amount
+				// this.transform = transforms.getItem(0);
+				// // Compare mouse position and object position
+				// this.lastMousePos.x -= this.transform.matrix.e;
+				// this.lastMousePos.y -= this.transform.matrix.f;
+				// this.lastMousePos.x -= this.selectedElement.position.x;
+				// this.lastMousePos.y -= this.selectedElement.position.y;
 			}
+		} else if (evt.buttons & MouseButton.Right) {
+			evt.preventDefault();
+			this.selectClick(evt);
 		}
 	}
 	
 	mainToolDrag(evt) {
 		if (evt.buttons & MouseButton.Left) {
+			evt.preventDefault();
+			let pos = this.getMousePosition(evt);
+			let x = pos.x - this.lastMousePos.x;
+			let y = pos.y - this.lastMousePos.y;
+			this.lastMousePos = pos;
 			// -- drag object
-			if (this.selectedElement) {
-				evt.preventDefault();
-				let pos = this.getMousePosition(evt);
-				let dx = pos.x - this.offset.x;
-				let dy = pos.y - this.offset.y;
+			if (!this.selected.includes(this.selectedElement.id)) {
 				// -- confine movement
-				if (this.confined) {
-					if (dx < this.minX) { dx = this.minX; }
-					else if (dx > this.maxX) { dx = this.maxX; }
-					if (dy < this.minY) { dy = this.minY; }
-					else if (dy > this.maxY) { dy = this.maxY; }
-				}
+				// if (this.confined) {
+				// 	if (dx < this.minX) { dx = this.minX; }
+				// 	else if (dx > this.maxX) { dx = this.maxX; }
+				// 	if (dy < this.minY) { dy = this.minY; }
+				// 	else if (dy > this.maxY) { dy = this.maxY; }
+				// }
 				// -- move object
-				this.transform.setTranslate(dx, dy);
+				// console.log(this.selectedElement);
+				// console.log(this.transform);
+				// this.transform.setTranslate(dx, dy);
+				this.selectedElement.moveBy(x, y);
 			}
+			if (this.selected.length > 0) {
+				evt.preventDefault();
+				for (let index = 0; index < this.selected.length; index++) {
+					const element = this.elements[this.selected[index]];
+					element.moveBy(x,y);
+				}
+			}
+		} else if (evt.buttons & MouseButton.Right) {
+			evt.preventDefault();
+			this.selectDrag(evt);
 		}
 	}
 	
 	mainToolEndDrag(evt) {
 		this.selectedElement = null;
+		this.selectEndDrag(evt);
 	}
 	
+	// -- eraser
+	
 	eraserClick(evt) {
-		if (evt.buttons & MouseButton.Left) {
-			// -- click on object
-			if (this.selectedElement) {
-				// -- remove object
-				this.selectedElement.parentNode.removeChild(this.selectedElement);
-				this.selectedElement = null;
-			}
-		}
+		this.eraser(evt);
 	}
 	
 	eraserDrag(evt) {
-		// -- drag over draggable object
-		if ((evt.buttons & MouseButton.Left) && evt.target.classList.contains('draggable')) {
-			// -- remove object
-			this.selectedElement = evt.target;
-			this.selectedElement.parentNode.removeChild(this.selectedElement);
-			this.selectedElement = null;
-		}
+		this.eraser(evt);
 	}
 	
 	eraserEndDrag(evt) {
 		this.selectedElement = null;
 	}
+
+	eraser(evt) {
+		if (evt.buttons & MouseButton.Left) {
+			// -- Select the clicked element
+			if (evt.target.classList.contains('draggable')) {
+				// this.selectedElement = evt.target;
+				this.selectedElement = this.elements[evt.target.id];
+			} else {
+				this.selectedElement = null;
+			}
+			// -- click on element
+			if (this.selectedElement) {
+				// -- remove element from svg
+				this.selectedElement.element.remove();//.parentNode.removeChild(this.selectedElement);
+				// -- remove element from this.selected
+				this.unselect(this.selectedElement.id);
+				// -- remove element from this.elements
+				// let index = this.elements.indexOf(this.selectedElement);
+				// if (index > -1) { // only splice array when item is found
+				// 	this.elements.splice(index, 1); // 1 means remove one item only
+				// }
+				delete this.elements[this.selectedElement.id];
+				// -- unselect element
+				this.selectedElement = null;
+				// console.log(this.elements);
+			}
+		}
+	}
+	
+	// -- select
+	
+	unselectAll() {
+		for (let index = 0; index < this.selected.length; index++) {
+			const element = this.elements[this.selected[index]].element;
+			let classString = element.getAttributeNS(null, "class");
+			classString = classString.replaceAll(" selected", "");
+			element.setAttributeNS(null, "class", classString);
+		}
+		// console.log(this.selected);
+		this.selected = [];
+	}
+	
+	unselect(id) {
+		let index = this.selected.indexOf(id);
+		if (index > -1) { // only splice array when item is found
+			const element = this.elements[id].element;
+			let classString = element.getAttributeNS(null, "class");
+			classString = classString.replaceAll(" selected", "");
+			element.setAttributeNS(null, "class", classString);
+			
+			this.selected.splice(index, 1); // 1 means remove one item only
+		}
+		// console.log(this.selected);
+	}
+	
+	select(id) {
+		const element = this.elements[id];
+		this.selected.push(element.id);
+		const svgElement = element.element;
+		let classString = svgElement.getAttributeNS(null, "class");
+		if (!classString.includes("selected")) {
+			svgElement.setAttributeNS(null, "class", classString+" selected");
+		}
+		// console.log(this.selected);
+	}
+	
+	addSelectRectangle() {
+		let rect = $(document.createElementNS(xmlns, 'rect')).appendTo(this.$svg).attr({
+			class: 'selectRectangle',
+			id: 'selectRectangle',
+			x: 0,
+			y: 0,
+			width: 0,
+			height: 0,
+			visibility: "visible"
+		}); //width: this.$svg.attr('width'), height: this.$svg.attr('height')
+		return rect;
+	};
+	
+	selectClick(evt) {
+		if (evt.buttons & (MouseButton.Left | MouseButton.Right)) {
+			// -- click on background
+			if (evt.target.id == 'background') {
+				this.unselectAll();
+				this.dragStart = this.getMousePosition(evt);
+
+				// -- click on draggable element
+			} else if (evt.target.classList.contains('draggable')) {
+				if (this.selected.includes(evt.target.id)) {
+					// -- unselect the clicked element
+					this.unselect(evt.target.id);
+				} else {
+					// -- select the clicked element
+					this.select(evt.target.id);
+					this.dragStart = null;
+				}
+			}
+		}
+	}
+	
+	selectDrag(evt) {
+		if (evt.buttons & (MouseButton.Left | MouseButton.Right)) {
+			if (this.dragStart != null) {
+				this.unselectAll();
+				let mouse = this.getMousePosition(evt);
+				let minPos = {
+					x: Math.min(mouse.x, this.dragStart.x),
+					y: Math.min(mouse.y, this.dragStart.y)
+				};
+				let maxPos = {
+					x: Math.max(mouse.x, this.dragStart.x),
+					y: Math.max(mouse.y, this.dragStart.y)
+				};
+				this.selectRectangle.attr({
+					x: minPos.x,
+					y: minPos.y,
+					width: maxPos.x-minPos.x,
+					height: maxPos.y-minPos.y,
+					visibility: "visible"
+				});
+				for (const [id, element] of Object.entries(this.elements)) {
+					const pos = element.position;
+					if (minPos.x < pos.x && pos.x < maxPos.x && minPos.y < pos.y && pos.y < maxPos.y) {
+						this.select(id);
+					}
+				}
+			}
+		}
+	}
+	
+	selectEndDrag(evt) {
+		this.selectRectangle.attr({
+			visibility: "hidden"
+		});
+		this.dragStart = null;
+	}
+	
 }
 
 
@@ -715,7 +735,7 @@ var InteractiveSVG = (function() {
 		this._addMouseEventHandlers();
 		this.$background = this._addBackground();
 		// alert(this.$svg[0].id);
-		makeInteractive({target:this.$svg[0]});
+		// makeInteractive({target:this.$svg[0]});
 	};
 
 	// Call this to create a new InteractiveSVG
