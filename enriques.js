@@ -102,11 +102,23 @@ function downloadInnerHtml(filename) {
 		url: "svg.css",
 		dataType: "text",
 		success: function(cssString) {
+			// -- embed CSS
 			elHtml = elHtml.replace("</svg>", "<style>"+cssString+"</style></svg>");
 			
+			// -- clean up, remove unnecessary text
+			elHtml = elHtml.replace(/class="mySVG.*viewBox/, 'viewBox');
+			elHtml = elHtml.replace(/<g id="guiGroup">.*<\/g>/, '');
+			elHtml = elHtml.replace(/\/\*.*\*\//g, '');
+			elHtml = elHtml.replace(/^\s*$(?:\r\n?|\n)/gm, '');
+			elHtml = elHtml.replace(/draggable/g, '');
+			elHtml = elHtml.replace(/selected/g, '');
+			elHtml = elHtml.replace(/highlight/g, '');
+			elHtml = elHtml.replace(/ *" /g, '\" ');
+			elHtml = elHtml.replace(/ *">/g, '\">');
+			
+			// -- download
 			var link = document.createElement('a');
 			mimeType = mimeType || 'text/plain';
-
 			link.setAttribute('download', filename);
 			link.setAttribute('href', 'data:' + mimeType  +  ';charset=utf-8,' + encodeURIComponent(elHtml));
 			link.click(); 
@@ -142,10 +154,35 @@ $(function() {
 				activeSVG.classList.remove(tool);
 			}
 			activeSVG.classList.add(this.value);
-			
+		}
+	});
+	
+	$('input[type=number][name=svgSize]').change(function() {
+		let viewBox = activeSVG.getAttribute("viewBox").split(" ");
+		if (this.id == "svgWidth") {
+			activeSVG.setAttribute("viewBox", viewBox[0] + " " + viewBox[1] + " " + this.value + " " + viewBox[3]);
+		} else if (this.id == "svgHeight") {
+			activeSVG.setAttribute("viewBox", viewBox[0] + " " + viewBox[1] + " " + viewBox[2] + " " + this.value);
 		}
 	});
 });
+
+function checkRadio(label) {
+	let input = $("#"+label.getAttribute("for"));
+	input.prop("checked", true);
+	input = input[0];
+	if (Tools.includes(input.value)) {
+		GlobalState.tool = input.value;
+		
+		active_mySVG.hideToolGUI();
+		
+		// -- add active tool to svg as class
+		for (const tool of Tools) {
+			activeSVG.classList.remove(tool);
+		}
+		activeSVG.classList.add(input.value);
+	}
+}
 
 ////////////////////////////////////////////////////////////////////
 
@@ -587,9 +624,10 @@ class mySVG {
 			onmouseenter: 'selectSVG(evt)',
 			id: (name ? name : "svg"+mySVG.newID())
 		}).appendTo($container);
-		this.$svg[0].setAttribute("viewBox", "0 0 " + (width || 100).toString() + ' ' + (height || 100).toString()); // can't use .attr for uppercase letters
 		
 		this.svg = this.$svg[0];
+		
+		this.svg.setAttribute("viewBox", "0 0 " + (width || 100).toString() + ' ' + (height || 100).toString()); // can't use .attr for uppercase letters
 		
 		// select this svg
 		if (activeSVG) {
@@ -647,7 +685,7 @@ class mySVG {
 		this.createShadowPointGui();
 		
 		// -- create Enriques base point
-		let pt = BasePoint.new(this.elements, this.pointGroup, {x:30, y:50}, 6);
+		let pt = BasePoint.new(this.elements, this.pointGroup, {x:20, y:70}, 6);
 		this.basePoint = pt.id; // id
 		this.selectElement(this.basePoint);
 		
@@ -1088,10 +1126,14 @@ class mySVG {
 	}
 	
 	satelliteDrag(evt) {
+		if (this.selected.length == 1 && !infinitelyClosePointTypes.includes(this.elements[this.selected[0]].type)) {
+			this.unselectAll();
+		}
+		
 		if (this.mouseButtons & MouseButton.Left) {
-			// -- drag objects (if any)
 			this.movingAnElement = true;
-			this.moveSelectedBy(this.dx, this.dy);
+			this.moveSelectedBy(this.dx, this.dy);	
+			
 		}
 		
 		if (this.selected.length == 1) {
@@ -1737,6 +1779,8 @@ class mySVG {
 		this.elements[l.id] = l;
 		this.controlPoint2Line = l;
 		
+		Line.instanceNumber -= 2;
+		
 		let pt;
 		
 		pt = Point.new({}, this.guiGroup, {x:50, y:10}, 2);
@@ -1752,6 +1796,8 @@ class mySVG {
 		pt.element.id = pt.id;
 		this.elements[pt.id] = pt;
 		this.controlPoint2 = pt;
+		
+		Point.instanceNumber -= 2;
 	};
 	
 	createShadowPointGui() {
@@ -1762,12 +1808,16 @@ class mySVG {
 		this.elements[l.id] = l;
 		this.shadowLine = l;
 		
+		Line.instanceNumber -= 1;
+		
 		let pt = Point.new({}, this.guiGroup, {x:10, y:10}, 4);
 		pt.element.classList.add("gui");
 		pt.id = "shadowPoint";
 		pt.element.id = pt.id;
 		this.elements[pt.id] = pt;
 		this.shadowPoint = pt;
+		
+		Point.instanceNumber -= 1;
 	}
 	
 	createFreePoint(parentId, pos) {

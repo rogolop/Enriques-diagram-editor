@@ -225,8 +225,36 @@ input[type="radio"] {
 	height: 25px;
 }
 
+input[type=number] {
+	width: 60px;
+	height: 18px;
+	box-sizing: border-box;
+	border-radius: 3px;
+	border-width: 0;
+	font-size: 15px;
+	display: block;
+}
 
+td {
+	box-sizing: border-box;
+	min-width: 50px;
+	height: 20px;
+	padding: 1px;
+	border-spacing: 0;
+	border: 0;
+	font-size: 15px;
+}
 
+tr {
+	margin: 0;
+	padding: 0px;
+}
+
+table {
+	border-spacing: 0;
+	padding: 0;
+	/* margin: 0 5px; */
+}
 
 
 /**********************************/
@@ -313,18 +341,6 @@ svg {
 	pointer-events: none;
 }
 
-
-.static {
-	cursor: not-allowed;
-}
-
-/* .draggable {
-	cursor: move;
-} */
-/* .draggable {
-	cursor: pointer
-} */
-
 .point.selected {
 	fill: var(--svg-selected-color);
 }
@@ -364,100 +380,3 @@ svg {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*********************************************************************/
-/* interactiveSVG */
-/*********************************************************************/
-
-/*  Color of element determined by role:
-	Orange: draggable, can be dragged directly,
-	Blue: controllable, moved indrectly by draggable elements, 
-	Green: generated, positioned determined by position of other elements
-	Pink: highlight,
-	Grey: static
-*/
-
-.interactiveSVG .background {
-	fill: #eeffee;
-}
-
-.interactiveSVG .point {
-	stroke: #f8f8f8;
-	stroke-width: 1;
-}
-
-.interactiveSVG .line {
-	fill: none;
-	stroke-width: 2;
-}
-
-.interactiveSVG .draggable-point {
-	fill: rgb(255, 165, 0);
-	stroke: #f8f8f8;
-	stroke-width: 1;
-}
-
-.interactiveSVG .draggable-line {
-	stroke: rgb(255, 165, 0);
-	stroke-width: 3;
-}
-
-.interactiveSVG .highlight-point {
-	fill: rgb(255, 0, 175);
-}
-
-.interactiveSVG .highlight-line {
-	stroke: rgb(255, 0, 175);
-}
-
-.interactiveSVG .controllable-point {
-	fill: var(--gui-color);
-	pointer-events: none;
-}
-
-.interactiveSVG .controllable-line {
-	stroke: var(--gui-color);
-}
-
-.interactiveSVG .generated-point {
-	fill: rgb(28, 173, 123);
-	pointer-events: none;
-}
-
-.interactiveSVG .generated-line {
-	stroke: rgb(28, 173, 123);
-}
-
-.interactiveSVG .static-point {
-	fill: rgb(120, 120, 120);
-	pointer-events: none;
-}
-
-.interactiveSVG .static-line {
-	stroke: rgb(120, 120, 120);
-	stroke-width: 1px;
-	pointer-events: none;
-}

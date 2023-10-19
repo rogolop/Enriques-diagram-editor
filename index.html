@@ -32,29 +32,40 @@
 		</button
 		><div class="vl"></div
 		><input type="radio" name="tool" id="mainTool" value="mainTool"
-		><label for="mainTool" class="toolLabel not-selectable" title="Move, select, edit curves">
+		><label for="mainTool" class="toolLabel not-selectable" title="Move, select, edit curves" onClick="checkRadio(this)">
 			<img src = "tools/main.svg" alt="tools/main.svg" draggable="false"/>
 		</label
 		><input type="radio" name="tool" id="select" value="select"
-		><label for="select" class="toolLabel not-selectable" title="Select">
+		><label for="select" class="toolLabel not-selectable" title="Select" onClick="checkRadio(this)">
 			<img src = "tools/select.svg" alt="tools/select.svg" draggable="false"/>
 		</label
 		><input type="radio" name="tool" id="eraser" value="eraser"
-		><label for="eraser" class="toolLabel not-selectable" title="Erase">
+		><label for="eraser" class="toolLabel not-selectable" title="Erase" onClick="checkRadio(this)">
 			<img src = "tools/eraser.svg" alt="tools/eraser.svg" draggable="false"/>
 		</label
 		><input type="radio" name="tool" id="free" value="free"
-		><label for="free" class="toolLabel not-selectable" title="Add free point">
+		><label for="free" class="toolLabel not-selectable" title="Add free point" onClick="checkRadio(this)">
 			<img src = "tools/free.svg" alt="tools/free.svg" draggable="false"/>
 		</label
 		><input type="radio" name="tool" id="satellite" value="satellite"
-		><label for="satellite" class="toolLabel not-selectable" title="Add satellite point">
+		><label for="satellite" class="toolLabel not-selectable" title="Add satellite point" onClick="checkRadio(this)">
 			<img src = "tools/satellite.svg" alt="tools/satellite.svg" draggable="false"/>
 		</label
 		><input type="radio" name="tool" id="curveEdit" value="curveEdit"
-		><label for="curveEdit" class="toolLabel not-selectable" title="Edit curves">
+		><label for="curveEdit" class="toolLabel not-selectable" title="Edit curves" onClick="checkRadio(this)">
 			<img src = "tools/curveEdit.svg" alt="tools/curveEdit.svg" draggable="false"/>
-		</label>
+		</label
+		><div class="vl"></div
+		><table style="display: inline-flex;"  class="not-selectable">
+			<tr>
+				<td>Width</td>
+				<td><input type="number" name="svgSize" id="svgWidth" value="200" min="1" autocomplete="off"></td>
+			</tr>
+			<tr>
+				<td>Height</td>
+				<td><input type="number" name="svgSize" id="svgHeight" value="100" min="1" autocomplete="off"></td>
+			</tr>
+		</table>
 	</div>
 	
 	<div id="content-container">
