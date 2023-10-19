@@ -1,0 +1,264 @@
+/**********************************/
+/*            General             */
+/**********************************/
+
+html {
+	font-family: Arial, Helvetica, sans-serif;
+}
+
+:root {
+	--text-color: #ffffff;
+	--background--color: #36373a;
+	--primary-color: #1c57a8;
+	--secondary-color: #e0dad0;
+	--accent-color: #2d7a2d;
+	
+	--text-color-inverted: #000000;
+	--accent-color-lighter: #64a564; /*#44b844; */
+	
+	--svg-transparent-dark-color: #00000020;
+	--svg-transparent-light-color: #ffffff20;
+	--svg-selected-color: var(--accent-color);
+	--svg-selectedPoint-color: #58d0d4;
+	--svg-deletePoint-color: #c00000;
+}
+
+body {
+	background-color: var(--background--color);
+}
+
+/* Donwload button */
+#downloadButton {
+	background: var(--accent-color); /*#5c5;*/
+	height: 2em;
+	width: 5em;
+	box-sizing: content-box;
+	display: inline-flex;
+	align-items: center;
+	justify-content: space-evenly;
+	margin: 0 0pt;
+	/* border-radius: 5px; */
+	cursor: pointer;
+	/* padding: 0 10px; */
+	border: 0px solid var(--accent-color); /*#8f8;*/
+	font-size: 20px;
+	color: var(--text-color);
+}
+
+/**********************************/
+/*      Custom radio buttons      */
+/**********************************/
+
+.toolLabel {
+	background: var(--secondary-color);
+	height: 2em;
+	width: 5em;
+	display: inline-flex;
+	align-items: center;
+	justify-content: space-evenly;
+	margin: 0 3pt;
+	border-radius: 5px;
+	cursor: pointer;
+	padding: 0 10px;
+	/* border: 2px solid lightgrey; */
+	transition: all 0.3s ease;
+}
+
+.toolLabel span{
+	font-size: 20px;
+	color: var(--text-color-inverted);
+}
+
+#mainTool:checked:checked ~ label[for=mainTool],
+#eraser:checked:checked ~ label[for=eraser],
+#select:checked:checked ~ label[for=select],
+#free:checked:checked ~label[for=free]
+{
+	border-color: var(--primary-color); /*#0069d9;*/
+	background: var(--primary-color);
+}
+
+#mainTool:checked:checked ~ label[for=mainTool] span,
+#eraser:checked:checked ~ label[for=eraser] span,
+#select:checked:checked ~ label[for=select] span,
+#free:checked:checked ~label[for=free] span
+{
+	color: var(--text-color);
+	transition: all 0.3s ease;
+}
+
+input[type="radio"]{
+	display: none;
+}
+
+.prevent-select {
+	/* Prevent text selection */
+	-webkit-user-select: none; /* Safari */
+	-ms-user-select: none; /* IE 10 and IE 11 */
+	user-select: none; /* Standard syntax */
+}
+
+/**********************************/
+/*       SVG (only in app)        */
+/**********************************/
+
+.svg-wrapper {
+	display: inline-block;  
+}
+
+svg {
+	margin: 2px;
+	border: 3pt solid transparent;
+	width: min(calc(100% - 6pt - 4px), 800px);
+}
+
+.activeSVG {
+	border: 3pt solid var(--accent-color-lighter);
+}
+
+.background {
+	fill: var(--secondary-color); /* #ffeeee; #f8f8f8; */
+}
+
+/* selection tool */
+.selectRectangle {
+	fill: var(--svg-transparent-dark-color);
+	stroke: var(--svg-transparent-light-color);
+	stroke-width: 1pt;
+}
+
+.static {
+	cursor: not-allowed;
+}
+
+/* .draggable {
+	cursor: move;
+} */
+/* .draggable {
+	cursor: pointer
+} */
+
+.point.selected {
+	fill: var(--svg-selected-color);
+}
+
+.point.draggable:hover {
+	/* fill: none; */
+	stroke: var(--svg-transparent-dark-color);
+	stroke-width: 2pt;
+	/* stroke-dasharray: 2,2; */
+	stroke-linejoin: round;
+	paint-order: stroke;
+	/* outline: 1pt dashed #00000030; */
+}
+/* 
+svg.eraser .point.draggable:hover {
+	fill: red;
+} */
+
+.point.highlight {
+	fill: var(--svg-deletePoint-color) !important;
+}
+
+.line.highlight {
+	stroke: var(--svg-deletePoint-color) !important;
+}
+/* .line.draggable:hover {
+	outline: 1pt solid var(--svg-transparent-dark-color);
+} */
+
+
+.line.selected {
+	stroke: var(--svg-selected-color);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*********************************************************************/
+/* interactiveSVG */
+/*********************************************************************/
+
+/*  Color of element determined by role:
+	Orange: draggable, can be dragged directly,
+	Blue: controllable, moved indrectly by draggable elements, 
+	Green: generated, positioned determined by position of other elements
+	Pink: highlight,
+	Grey: static
+*/
+
+.interactiveSVG .background {
+	fill: #eeffee; /* #f8f8f8; */
+}
+
+/*  Elements can be points (filled) or lines */
+.interactiveSVG .point {
+	stroke: #f8f8f8;
+	stroke-width: 1;
+}
+
+.interactiveSVG .line {
+	fill: none;
+	stroke-width: 2;
+}
+
+.interactiveSVG .draggable-point {
+	fill: rgb(255, 165, 0);
+	stroke: #f8f8f8;
+	stroke-width: 1;
+}
+
+.interactiveSVG .draggable-line {
+	stroke: rgb(255, 165, 0);
+	stroke-width: 3;
+}
+
+.interactiveSVG .highlight-point {
+	fill: rgb(255, 0, 175);
+}
+
+.interactiveSVG .highlight-line {
+	stroke: rgb(255, 0, 175);
+}
+
+.interactiveSVG .controllable-point {
+	fill: rgb(64, 95, 237);
+	pointer-events: none;
+}
+
+.interactiveSVG .controllable-line {
+	stroke: rgb(64, 95, 237);
+}
+
+.interactiveSVG .generated-point {
+	fill: rgb(28, 173, 123);
+	pointer-events: none;
+}
+
+.interactiveSVG .generated-line {
+	stroke: rgb(28, 173, 123);
+}
+
+.interactiveSVG .static-point {
+	fill: rgb(120, 120, 120);
+	pointer-events: none;
+}
+
+.interactiveSVG .static-line {
+	stroke: rgb(120, 120, 120);
+	stroke-width: 1px;
+	pointer-events: none;
+}

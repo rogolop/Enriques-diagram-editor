@@ -1,19 +1,21 @@
+/**********************************/
+/*     To be included in SVG      */
+/**********************************/
 
 :root {
-  --background--color: #ffffff;
-  --point-color: #000000;
-  --line-color: #000000; /*#9d1d1d;*/
+	--background--color: #ffffff;
+	--point-color: #000000;
+	--line-color: #000000; /*#9d1d1d;*/
 }
 
-
 .background {
-  fill: var(--background--color);
+	fill: var(--background--color);
 }
 
 .line {
-  stroke: var(--line-color);
+	stroke: var(--line-color);
 }
 
 .point {
-  fill: var(--point-color);
+	fill: var(--point-color);
 }

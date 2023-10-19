@@ -1,0 +1,63 @@
+<!DOCTYPE HTML>
+<html lang="en">
+
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Enriques diagram creator</title>
+
+	<link rel="shortcut icon" type="image/png" href="favicon.png">
+	<link rel="stylesheet" type="text/css" href="svg.css">
+	<link rel="stylesheet" type="text/css" href="style.css">
+
+	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+	<script type="text/javascript" src="enriques.js"></script>
+</head>
+
+
+
+<body>
+	<button id="downloadButton" onClick="downloadInnerHtml('exp.svg', 'svggg', 'image/svg+xml')">
+		<span class="prevent-select">Download</span>
+	</button>
+	<!-- <a href="#" id="downloadLink">Download the inner html</a> -->
+	
+	<!-- <button onClick="toggleErasing()">Toggle erase</button> -->
+	<input type="radio" name="tool" id="mainTool" value="mainTool">
+	<input type="radio" name="tool" id="eraser" value="eraser">
+	<input type="radio" name="tool" id="select" value="select">
+	<input type="radio" name="tool" id="free" value="free">
+	
+	<label for="mainTool" class="toolLabel">
+		<span class="prevent-select">mainTool</span>
+	</label>
+	<label for="free" class="toolLabel">
+		<span class="prevent-select">free</span>
+	</label>
+	<label for="select" class="toolLabel">
+		<span class="prevent-select">select</span>
+	</label>
+	<label for="eraser" class="toolLabel">
+		<span class="prevent-select">eraser</span>
+	</label>
+	
+	
+	<!-- <input type="range" min="1" max="100" value="50" oninput="moveSlider(this, 'x')"/>
+	<input type="range" min="1" max="100" value="50" oninput="moveSlider(this, 'y')"/> -->
+	
+	<br>
+	<br>
+	
+	<!-- <div id="taco" class="svg-wrapper" style="width: 50%"></div> -->
+	<div id="taco" class="svg-wrapper"></div>
+	
+	<script type="text/javascript">
+		// (function() {
+			var svggg = new mySVG(200, 100, 'taco', 'svggg');
+			svggg.svg.setAttribute("height", "250px");
+			// svggg.createExampleDiagram();
+		// })();
+	</script>
+	<noscript>Sorry, your browser does not support JavaScript!</noscript>
+</body>

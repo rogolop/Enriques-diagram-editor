@@ -9,7 +9,6 @@ const Tool = {
 	Main: "mainTool",
 	Eraser: "eraser",
 	Select: "select",
-	Connect: "connect",
 	Free: "free"
 };
 const Tools = Object.keys(Tool).map(function(key){return Tool[key];});
@@ -49,11 +48,14 @@ const deletablePointTypes = [
 	ObjectTypes.LastSatellitePoint
 ];
 
-
+const lastPointTypes = [
+	ObjectTypes.LastFreePoint,
+	ObjectTypes.LastSatellitePoint
+];
 
 // Global state
 var initGlobalState = {
-	tool: Tool.Free
+	tool: Tool.Main
 };
 var GlobalState = initGlobalState;
 
@@ -61,13 +63,17 @@ var GlobalState = initGlobalState;
 var activeSVG;
 
 function selectSVG(evt) {
-	$(activeSVG).attr({
-		class: ""
-	});
+	if (activeSVG) {
+		activeSVG.classList.remove("activeSVG");
+	}
+	// $(activeSVG).attr({
+	// 	class: ""
+	// });
 	activeSVG = evt.target;
-	$(activeSVG).attr({
-		class: "activeSVG"
-	});
+	// $(activeSVG).attr({
+	// 	class: "activeSVG"
+	// });
+	activeSVG.classList.add("activeSVG");
 	// alert(activeSVG.id);
 }
 
@@ -109,6 +115,13 @@ $(function() {
 	$('input[type=radio][name=tool]').change(function() {
 		if (Tools.includes(this.value)) {
 			GlobalState.tool = this.value;
+			
+			// -- add active tool to svg as class
+			for (const tool of Tools) {
+				activeSVG.classList.remove(tool);
+			}
+			activeSVG.classList.add(this.value);
+			
 		}
 	});
 });
@@ -173,6 +186,8 @@ class Point extends myElement {
 		super(_svg, "point"+Point.newID(), _pos);
 		this.r = _r;
 		this.element = this.createPoint(_pos, _r, true);
+		// this.element.addEventListener('mouseenter', function(){this.element.classList.add("hovering");}.bind(this));
+		// this.element.addEventListener('mouseleave', function(){this.element.classList.remove("hovering");}.bind(this));
 		this.type = ObjectTypes.Point;
 	}
 	
@@ -287,6 +302,20 @@ class Line extends myElement {
 	}
 }
 
+class LineFromTo extends Line {
+	static new(_elements, _svg, _pt1, _pt2) {
+		let line = new LineFromTo(_svg, _pt1, _pt2);
+		_elements[line.id] = line;
+		return line;
+	}
+	
+	constructor(_svg, _pt1, _pt2) {
+		super(_svg, _pt1.position, _pt2.position);
+		this.point1 = _pt1.id; // id
+		this.point2 = _pt2.id; // id
+	}
+}
+
 class BasePoint extends Point {
 	static new(_elements, _svg, _pos, _r) {
 		let pt = new BasePoint(_svg, _pos, _r);
@@ -296,16 +325,8 @@ class BasePoint extends Point {
 	
 	constructor(_svg, _pos, _r) {
 		super(_svg, _pos, _r);
-		this.children = []; // JS
+		this.children = []; // id
 		this.type = ObjectTypes.BasePoint;
-	}
-	
-	moveTo(x, y) {
-		super.moveTo(x,y);
-		for (const lastFreePoint of this.children) {
-			lastFreePoint.updateBase()
-			// this.moveBy(x-this.pos.x, y-this.pos.y);
-		}
 	}
 }
 
@@ -318,43 +339,22 @@ class LastFreePoint extends Point {
 	}
 	
 	static new(_elements, _lineParent, _pointParent, _base, _pos, _r) {
-		let pt = new LastFreePoint(_elements, _lineParent, _pointParent, _base, _pos, _r);
+		let pt = new LastFreePoint(_elements, _pointParent, _base, _pos, _r);
+		let _line = LineFromTo.new(_elements, _lineParent, _base, pt); // JS line
+		pt.line = _line.id;
 		_elements[pt.id] = pt;
-		console.log("new LastFreePoint\npt.base.children =", pt.base.children);
 		return pt;
 	}
 	
-	constructor(_elements, _lineParent, _pointParent, _base, _pos, _r) {
+	constructor(_elements, _pointParent, _base, _pos, _r) {
 		super(_pointParent, _pos, _r);
-		this.line = Line.new(_elements, _lineParent, _base.position, _pos); // JS line
-		this.base = _base; // JS BasePoint / LastFreePoint
-		this.base.children.push(this);
-		this.children = []; // JS
+		this.line = null;
+		this.base = _base.id; // id BasePoint / LastFreePoint
+		_base.children.push(this.id);
+		this.children = []; // ids
 		this.type = ObjectTypes.LastFreePoint;
 	}
-	
-	moveTo(x, y) {
-		super.moveTo(x,y);
-		this.line.position2 = {x: x, y: y};
-		for (const lastFreePoint of this.children) {
-			lastFreePoint.updateBase()
-			// this.moveBy(x-this.pos.x, y-this.pos.y);
-		}
-	}
-	
-	updateBase() {
-		this.line.position1 = this.base.position;
-	}
-	
-	get descendants() {
-		let desc = this.children;
-		for (const lastFreePoint of this.children) {
-			desc = desc.concat(lastFreePoint.descendants);
-		}
-		return desc;
-	}
 }
-
 
 class mySVG {
 	static instanceNumber = 0;
@@ -383,29 +383,37 @@ class mySVG {
 		this.$svg[0].setAttribute("viewBox", "0 0 " + (width || 100).toString() + ' ' + (height || 100).toString()); // can't use .attr for uppercase letters
 		
 		this.svg = this.$svg[0];
-
+		
+		// select this svg
+		if (activeSVG) {
+			activeSVG.classList.remove("activeSVG");
+		}
+		activeSVG = this.svg;
+		activeSVG.classList.add("activeSVG");
+		
 		// -- all "myElement"s
-		this.elements = {};
+		this.elements = {}; // id -> myElement
+		this.points = []; // ids
+		this.lines = []; // ids
 		
 		// -- event variables
 		this.mousePos = {x:0, y:0}; // pos
+		this.dragStartMousePos = {x:0, y:0}; // pos
 		this.lastMousePos = {x:0, y:0}; // pos
+		this.mouseButtons = 0;
 		this.dx = 0;
 		this.dy = 0;
-		this.dragStartMousePos = {x:0, y:0}; // pos
 		this.targetId = null; // id
 		this.targetElement = null; // myElement
 		
-		// -- tool states
+		// -- tool variables
 		this.movingAnElement = false;
 		this.selectingRectangle = false;
-		
-		// -- tool variables
 		this.selected = []; // ids
-		this.points = []; // ids, for later
+		this.descendants = []; // ids
 		
-		// -- create elements
-		this.$background = this.addBackground();
+		// -- create background
+		this.$background = this.createBackground();
 		
 		// -- create SVG grouping elements
 		this.lineGroup = $(document.createElementNS(xmlns, 'g')).appendTo(this.$svg).attr({
@@ -416,12 +424,16 @@ class mySVG {
 		})[0];
 		
 		// -- create tool gui svg elements
-		this.selectRectangle = this.addSelectRectangle();
+		this.$selectRectangle = this.createSelectionRectangle();
+		
 		
 		// -- create Enriques base point
 		let pt = BasePoint.new(this.elements, this.pointGroup, {x:10, y:80}, 6);
-		this.basePoint = pt.id;
+		this.basePoint = pt.id; // id
 		this.selectElement(this.basePoint);
+		
+		// -- create example diagram
+		this.createExampleDiagram();
 		
 		// -- add mouse event listeners
 		this.makeInteractive();
@@ -429,35 +441,16 @@ class mySVG {
 	
 	// -- GENERAL
 	
-	addBackground() {
-		let bg = $(document.createElementNS(xmlns, 'rect')).appendTo(this.$svg).attr({
-			class: 'background',
-			id: 'background',
-			width: '100%',
-			height: '100%'
-		});
-		return bg;
-	};
-	
-	addSelectRectangle() {
-		let rect = $(document.createElementNS(xmlns, 'rect')).attr({
-			class: 'selectRectangle',
-			id: 'selectRectangle',
-			x: 0,
-			y: 0,
-			width: 0,
-			height: 0,
-			visibility: "visible"
-		}).appendTo(this.$svg); //width: this.$svg.attr('width'), height: this.$svg.attr('height')
-		return rect;
-	};
-	
 	makeInteractive() {
 		// mouse events
 		this.svg.addEventListener('mousedown', this.doOnClick.bind(this));
 		this.svg.addEventListener('mousemove', this.doOnDrag.bind(this));
 		this.svg.addEventListener('mouseup',  this.doOnEndDrag.bind(this));
 		this.svg.addEventListener('mouseleave', this.doOnEndDrag.bind(this));
+		
+		this.svg.addEventListener('mouseover', this.doOnMouseOver.bind(this));
+		// this.svg.addEventListener('mouseout', this.doOnMouseOver.bind(this));
+		
 		// touch events
 		this.svg.addEventListener('touchstart', this.doOnClick.bind(this));
 		this.svg.addEventListener('touchmove', this.doOnDrag.bind(this));
@@ -475,6 +468,7 @@ class mySVG {
 		this.dragStartMousePos = this.mousePos;
 		this.targetId = evt.target.id;
 		this.targetElement = this.elements[this.targetId];
+		this.mouseButtons = evt.buttons;
 		
 		// -- act depending on tool
 		switch (GlobalState.tool) {
@@ -486,9 +480,6 @@ class mySVG {
 				break;
 			case Tool.Select:
 				this.selectClick(evt);
-				break;
-			case Tool.Connect:
-				//
 				break;
 			case Tool.Free:
 				this.freeClick(evt);
@@ -516,9 +507,6 @@ class mySVG {
 			case Tool.Select:
 				this.selectDrag(evt);
 				break;
-			case Tool.Connect:
-				//
-				break;
 			case Tool.Free:
 				this.freeDrag(evt);
 				break;
@@ -545,14 +533,40 @@ class mySVG {
 			case Tool.Select:
 				this.selectEndDrag(evt);
 				break;
-			case Tool.Connect:
-				//
-				break;
 			case Tool.Free:
 				this.freeEndDrag(evt);
 				break;
 			default:
 				break;
+		}
+		
+		this.mouseButtons = 0;
+	}
+	
+	doOnMouseOver(evt) {
+		if (this.mouseButtons == 0) {
+			this.mousePos = this.getMousePosition(evt);
+			this.targetId = evt.target.id;
+			this.targetElement = this.elements[this.targetId];
+			this.mouseButtons = evt.buttons;
+			
+			// -- act depending on tool
+			switch (GlobalState.tool) {
+				case Tool.Main:
+					this.mainToolMouseOver(evt);
+					break;
+				case Tool.Eraser:
+					this.eraserMouseOver(evt);
+					break;
+				case Tool.Select:
+					this.selectMouseOver(evt);
+					break;
+				case Tool.Free:
+					this.freeMouseOver(evt);
+					break;
+				default:
+					break;
+			}
 		}
 	}
 	
@@ -561,42 +575,39 @@ class mySVG {
 	// -- main tool
 	
 	mainToolClick(evt) {
-		if (evt.buttons & MouseButton.Left) {
+		if (this.mouseButtons & MouseButton.Left) {
 			if (this.targetId == 'background' && this.selected.length == 1) {
 				let pt = this.createFreePoint(this.selected[0], this.mousePos);
 				this.unselectAll();
 				this.selectElement(pt.id);
 				
 			} else if (this.targetElement && movablePointTypes.includes(this.targetElement.type)) {
-				if (this.selected.length <= 1) {
+				if (this.selected.length <= 1 || !this.selected.includes(this.targetId)) {
 					this.unselectAll();
 					this.selectElement(this.targetId);
 				}
-				// if (!this.selected.includes(this.targetId)) {
-				// 	if (this.selected.length == 1) {
-				// 		this.unselectAll();
-				// 	}
-				// 	this.selectElement(this.targetId);
-				// }
 				
 			} else {
 				this.unselectAll();
 			}
-		} else if (evt.buttons & MouseButton.Right) {
+		} else if (this.mouseButtons & MouseButton.Right) {
 			if (this.targetId == 'background') {
 				this.unselectAll();
 				this.startSelectionInRectangle();
 			}
+			// else if (this.targetElement && movablePointTypes.includes(this.targetElement.type)) {
+			// 	this.toggleSelectElement(this.targetId);
+			// }
 		}
 	}
 	
 	mainToolDrag(evt) {
-		if (evt.buttons & MouseButton.Left) {
+		if (this.mouseButtons & MouseButton.Left) {
 			// -- drag objects (if any)
 			this.movingAnElement = true;
 			this.moveSelectedBy(this.dx, this.dy);
 			
-		} else if (evt.buttons & MouseButton.Right) {
+		} else if (this.mouseButtons & MouseButton.Right) {
 			if (this.selectingRectangle) {
 				this.multipleSelectInRectangle();
 			}
@@ -604,23 +615,34 @@ class mySVG {
 	}
 	
 	mainToolEndDrag(evt) {
-		if (this.movingAnElement) {
-			this.movingAnElement = false;
-		} else {
-			// if (this.distance2(this.dragStartMousePos, this.mousePos) < EPS) {
-			if (this.targetElement && movablePointTypes.includes(this.targetElement.type)) {
-				if (this.selected.length >= 2) {
+		if (this.mouseButtons & MouseButton.Left) {
+			if (this.movingAnElement) {
+				this.movingAnElement = false;
+			} else {
+				// if (this.distance2(this.dragStartMousePos, this.mousePos) < EPS) {
+				if (this.targetElement && movablePointTypes.includes(this.targetElement.type)) {
+					if (this.selected.length >= 2) {
+						this.toggleSelectElement(this.targetId);
+					}
+				}
+			}
+		} else if (this.mouseButtons & MouseButton.Right) {
+			if (this.selectingRectangle) {
+				this.stopSelectionInRectangle();
+			} else if (!this.movingAnElement) {
+				if (this.targetElement && movablePointTypes.includes(this.targetElement.type)) {
 					this.toggleSelectElement(this.targetId);
 				}
 			}
 		}
-		this.stopSelectionInRectangle();
 	}
+	
+	mainToolMouseOver(evt) {}
 	
 	// -- free
 	
 	freeClick(evt) {
-		if (evt.buttons & MouseButton.Left) {
+		if (this.mouseButtons & MouseButton.Left) {
 			if (this.targetId == 'background' && this.selected.length == 1) {
 				let pt = this.createFreePoint(this.selected[0], this.mousePos);
 				this.unselectAll();
@@ -634,13 +656,13 @@ class mySVG {
 				this.unselectAll();
 			}
 			
-		} else if (evt.buttons & MouseButton.Right) {
+		} else if (this.mouseButtons & MouseButton.Right) {
 			this.unselectAll();
 		}
 	}
 	
 	freeDrag(evt) {
-		if (evt.buttons & MouseButton.Left) {
+		if (this.mouseButtons & MouseButton.Left) {
 			// -- drag objects (if any)
 			this.movingAnElement = true;
 			this.moveSelectedBy(this.dx, this.dy);
@@ -653,10 +675,12 @@ class mySVG {
 		}
 	}
 	
+	freeMouseOver(evt) {}
+	
 	// -- select
 	
 	selectClick(evt) {
-		if (evt.buttons & (MouseButton.Left | MouseButton.Right)) {
+		if (this.mouseButtons & (MouseButton.Left | MouseButton.Right)) {
 			if (this.targetId == 'background') {
 				// >> click on background
 				this.unselectAll();
@@ -670,7 +694,7 @@ class mySVG {
 	}
 	
 	selectDrag(evt) {
-		if (evt.buttons & (MouseButton.Left | MouseButton.Right)) {
+		if (this.mouseButtons & (MouseButton.Left | MouseButton.Right)) {
 			if (this.selectingRectangle) {
 				this.multipleSelectInRectangle();
 			}
@@ -680,6 +704,8 @@ class mySVG {
 	selectEndDrag(evt) {
 		this.stopSelectionInRectangle();
 	}
+	
+	selectMouseOver(event) {}
 	
 	// -- eraser
 	
@@ -691,23 +717,53 @@ class mySVG {
 		this.unselectAll();
 	}
 	
-	// ---- FUNCTIONS
-	
-	createFreePoint(parentId, pos) {
-		let pt;
-		let parent = this.elements[parentId];
-
-		// -- create free point connected to parent
-		pt = LastFreePoint.new(this.elements, this.lineGroup, this.pointGroup,
-													 parent, pos, 4);
-		this.points.push(pt);
-		
-		console.log("createFreePoint()\nparent.children =", parent.children.map(pt => pt.id));
-		return pt;
+	eraserMouseOver(evt) {
+		this.highlightDescendants(this.targetElement);
 	}
 	
+	// ---- FUNCTIONS
+	
+	// -- move
+	
+	moveSelectedBy(dx, dy) {
+		for (let index = 0; index < this.selected.length; index++) {
+			const id = this.selected[index]
+			const element = this.elements[id];
+			if (element.type == ObjectTypes.BasePoint) {
+				this.moveBasePointBy(element, dx, dy);
+			} else if (element.type == ObjectTypes.LastFreePoint) {
+				this.moveLastFreePointBy(element, dx, dy);
+			} else {
+				element.moveBy(dx, dy);
+			}
+		}
+	}
+	
+	moveBasePointBy(element, dx, dy) {
+		element.moveBy(dx, dy);
+		for (const childId of element.children) {
+			let child = this.elements[childId];
+			let line = this.elements[child.line];
+			line.position1 = element.position;
+		}
+	}
+	
+	moveLastFreePointBy(element, dx, dy) {
+		element.moveBy(dx, dy);
+		let line = this.elements[element.line];
+		line.position2 = element.position;
+		for (const childId of element.children) {
+			let child = this.elements[childId];
+			line = this.elements[child.line];
+			line.position1 = element.position;
+			// this.moveBy(x-this.pos.x, y-this.pos.y);
+		}
+	}
+	
+	// -- erase
+	
 	erase(evt) {
-		if (evt.buttons & MouseButton.Left) {
+		if (this.mouseButtons & MouseButton.Left) {
 			if (this.targetElement && deletablePointTypes.includes(this.targetElement.type)) {
 				// evt.target.classList.contains('draggable')
 				this.erasePointAndDescendants(this.targetElement);
@@ -718,40 +774,79 @@ class mySVG {
 	}
 	
 	erasePointAndDescendants(element) {
-		let parentPoint = element;
-		console.log("erasePointAndDescendants()\nparentPoint.id =", parentPoint.id, "\nparentPoint.children =", parentPoint.children.map(pt => pt.id));
+		this.descendants = [];
 		
-		// -- unselect element
+		// -- unselect
 		this.unselectAll();
 		
 		// -- remove from base's children
-		let index = parentPoint.base.children.indexOf(parentPoint.id);
-		parentPoint.base.children.splice(index, 1);
-
-		// -- use the element's removal function
-		// parentPoint.del();
+		let base = this.elements[element.base];
+		let index = base.children.indexOf(element.id);
+		base.children.splice(index, 1);
 		
-		// -- remove descendants and itself
-		let desc = parentPoint.descendants; // includes parentPoint
-		desc.push(parentPoint);
-		console.log("desc = ", desc);
-		for (const descendantPoint of desc) {
-			console.log(descendantPoint.id);
-			// this.unselectElement(descendantPoint.id); // included in unselectAll()
-			
-			delete this.elements[descendantPoint.id]; // remove from mySVG
-			descendantPoint.element.remove(); // remove from SVG
-			
+		// -- remove descendants of element and itself
+		let removalQueue = [element.id];
+		while (removalQueue.length > 0) {
+			let descendant = this.elements[removalQueue.shift()];
+			// -- add children of descendant for removal
+			removalQueue = removalQueue.concat(descendant.children);
+			// -- remove from SVG
+			descendant.element.remove();
 			// -- clear links to other points
-			descendantPoint.children = [];
-			descendantPoint.base = null;
+			descendant.children = [];
+			descendant.base = null;
 			
-			// -- remove child line
-			console.log(descendantPoint.line.id);
-			delete this.elements[descendantPoint.line.id]; // remove from mySVG
-			descendantPoint.line.element.remove(); // remove from SVG
+			let line = this.elements[descendant.line];
+			// -- remove from SVG
+			line.element.remove();
+			// -- clear links to other points
+			line.point1 = null;
+			line.point2 = null;
+			
+			// -- remove from mySVG
+			delete this.elements[line.id];
+			delete this.elements[descendant.id];
 		}
 	}
+	
+	highlightDescendants(element) {
+		// -- remove highlights, clear this.descendants
+		for (const id of this.descendants) {
+			let descendant = this.elements[id];
+			descendant.element.classList.remove("highlight");
+			// -- remove highlight from incoming line
+			if (lastPointTypes.includes(descendant.type)) {
+				let line = this.elements[descendant.line];
+				line.element.classList.remove("highlight");
+			}
+		}
+		this.descendants = [];
+		
+		if (element && movablePointTypes.includes(element.type)) {
+			// -- highlight descendants of element and itself
+			// element.element.classList.add("highlight");
+			// this.descendants.push(element.id);
+			// let queue = element.children.concat([]); // .concat([]) to do a shallow copy instead of assigning references
+			let queue = [element.id];
+			if (element.type == ObjectTypes.BasePoint) {
+				queue = element.children.concat([]); // .concat([]) to do a shallow copy instead of assigning references
+			}
+			while (queue.length > 0) {
+				let descendant = this.elements[queue.shift()];
+				// -- add highlighted point to this.descendants
+				this.descendants.push(descendant.id);
+				// -- add children of descendant to queue
+				queue = queue.concat(descendant.children);
+				// -- highlight point and line
+				descendant.element.classList.add("highlight");
+				if (lastPointTypes.includes(descendant.type)) {
+					let line = this.elements[descendant.line];
+					line.element.classList.add("highlight");
+				}
+			}
+		}
+	}
+	
 	
 	// -- select
 	
@@ -804,7 +899,7 @@ class mySVG {
 			x: Math.max(this.mousePos.x, this.dragStartMousePos.x),
 			y: Math.max(this.mousePos.y, this.dragStartMousePos.y)
 		};
-		this.selectRectangle.attr({
+		this.$selectRectangle.attr({
 			x: minPos.x,
 			y: minPos.y,
 			width: maxPos.x-minPos.x,
@@ -828,16 +923,65 @@ class mySVG {
 	
 	stopSelectionInRectangle() {
 		this.selectingRectangle = false;
-		this.selectRectangle.attr({visibility: "hidden"});
+		this.$selectRectangle.attr({visibility: "hidden"});
 	}
 	
-	// -- move
+	// -- create
 	
-	moveSelectedBy(dx, dy) {
-		for (let index = 0; index < this.selected.length; index++) {
-			const element = this.elements[this.selected[index]];
-			element.moveBy(dx, dy);
-		}
+	createBackground() {
+		let $bg = $(document.createElementNS(xmlns, 'rect')).attr({
+			class: 'background',
+			id: 'background',
+			width: '100%',
+			height: '100%'
+		}).appendTo(this.$svg);
+		return $bg;
+	};
+	
+	createSelectionRectangle() {
+		let $rect = $(document.createElementNS(xmlns, 'rect')).attr({
+			class: 'selectRectangle',
+			id: 'selectRectangle',
+			x: 0,
+			y: 0,
+			width: 0,
+			height: 0,
+			visibility: "visible"
+		}).appendTo(this.$svg); //width: this.$svg.attr('width'), height: this.$svg.attr('height')
+		return $rect;
+	};
+	
+	createFreePoint(parentId, pos) {
+		let pt;
+		let parent = this.elements[parentId];
+		
+		// -- create free point connected to parent
+		pt = LastFreePoint.new(this.elements, this.lineGroup, this.pointGroup,
+													 parent, pos, 4);
+		this.points.push(pt.id);
+		this.lines.push(pt.line);
+		
+		return pt;
+	}
+	
+	createExampleDiagram() {
+		let pt = this.createFreePoint(this.basePoint, {x: 20, y: 50});
+		let pt4 = this.createFreePoint(pt.id, {x: 40, y: 80});
+		pt4 = this.createFreePoint(pt4.id, {x: 60, y: 90});
+		pt4 = this.createFreePoint(pt4.id, {x: 130, y: 90});
+		pt4 = this.createFreePoint(pt4.id, {x: 140, y: 70});
+		pt = this.createFreePoint(pt.id, {x: 35, y: 30});
+		pt = this.createFreePoint(pt.id, {x: 50, y: 20});
+		pt = this.createFreePoint(pt.id, {x: 70, y: 20});
+		this.createFreePoint(pt.id, {x: 70, y: 40});
+		pt = this.createFreePoint(pt.id, {x: 90, y: 20});
+		this.createFreePoint(pt.id, {x: 100, y: 10});
+		let pt2 = this.createFreePoint(pt.id, {x: 90, y: 40});
+		let pt3 = this.createFreePoint(pt2.id, {x: 90, y: 60});
+		this.createFreePoint(pt2.id, {x: 110, y: 60});
+		this.createFreePoint(pt2.id, {x: 110, y: 40});
+		pt = this.createFreePoint(pt.id, {x: 110, y: 20});
+		pt = this.createFreePoint(pt.id, {x: 130, y: 20});
 	}
 	
 	// -- get mouse position in SVG coordinates
@@ -855,56 +999,5 @@ class mySVG {
 		return (pos1.x-pos2.x)**2 + (pos1.y - pos2.y)**2;
 	}
 }
-
-
-/* TESTS */
-
-// class A {
-// 	hello() {
-// 		this.print();
-// 	}
-	
-// 	print() {
-// 		console.log("A");
-// 	}
-// }
-
-// class B extends A {
-// 	print() {
-// 		console.log("B");
-// 	}
-// }
-
-// b = new B();
-// b.hello();
-
-// class A {
-// 	static instanceNumber = 0;
-// 	static newID() {
-// 		let n = A.instanceNumber;
-// 		A.instanceNumber++;
-// 		return n;
-// 	}
-	
-// 	constructor() {
-// 		console.log("A"+A.newID());
-// 	}
-// }
-
-// class B extends A {
-// 	constructor() {
-// 		super();
-// 		console.log("B"+B.newID());
-// 	}
-// }
-
-// var a = new A();
-// a = new A();
-// a = new A();
-// var b = new B();
-
-// console.log(A.instanceNumber);
-// console.log(B.instanceNumber);
-
 
 
