@@ -1,60 +1,46 @@
-html * {
+/**********************************/
+/*            General             */
+/**********************************/
+
+html {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+:root {
+  --text-color: #ffffff;
+  --background--color: #36373a;
+  --primary-color: #1c57a8;
+  --secondary-color: #e0dad0;
+  --accent-color: #2d7a2d;
+  
+  --text-color-inverted: #000000;
+  --accent-color-lighter: #44b844;
+  
+  --svg-transparent-dark-color: #00000020;
+  --svg-transparent-light-color: #ffffff20;
+  --svg-selected-color: var(--accent-color);
+}
+
 body {
-  background-color: #36373a;
+  background-color: var(--background--color);
 }
 
-/*********************************************************************/
-
-.static {
-  cursor: not-allowed;
-}
-/* .draggable {
-  cursor: move;
-} */
-
-svg {
-  max-width: 800px;
-}
-
-.mySVG .background {
-  fill: #ffeeee; /* #f8f8f8; */
-}
-
-.selectRectangle {
-  fill: #00000020;
-}
-
-.draggable {
-  cursor: pointer
-}
-
-.draggable:hover {
-  /* fill: none; */
-  stroke: #00000020;
-  stroke-width: 2pt;
-  /* stroke-dasharray: 2,2; */
-  stroke-linejoin: round;
-  paint-order: stroke;
-  /* outline: 1pt dashed #00000030; */
-}
-
-button {
-  background: #5c5;
+/* Donwload button */
+#downloadButton {
+  background: var(--accent-color); /*#5c5;*/
   height: 2em;
-  width: 7em;
+  width: 5em;
+  box-sizing: content-box;
   display: inline-flex;
   align-items: center;
   justify-content: space-evenly;
   margin: 0 0pt;
-  border-radius: 5px;
+  /* border-radius: 5px; */
   cursor: pointer;
-  padding: 0 10px;
-  border: 2px solid #8f8;
-  font-size: 15px;
-  color: black;
+  /* padding: 0 10px; */
+  border: 0px solid var(--accent-color); /*#8f8;*/
+  font-size: 20px;
+  color: var(--text-color);
 }
 
 /**********************************/
@@ -62,9 +48,9 @@ button {
 /**********************************/
 
 .toolLabel {
-  background: #fff;
+  background: var(--secondary-color);
   height: 2em;
-  width: 7em;
+  width: 5em;
   display: inline-flex;
   align-items: center;
   justify-content: space-evenly;
@@ -72,28 +58,30 @@ button {
   border-radius: 5px;
   cursor: pointer;
   padding: 0 10px;
-  border: 2px solid lightgrey;
+  /* border: 2px solid lightgrey; */
   transition: all 0.3s ease;
 }
 
 .toolLabel span{
   font-size: 20px;
-  color: black;
+  color: var(--text-color-inverted);
 }
 
 #mainTool:checked:checked ~ label[for=mainTool],
 #eraser:checked:checked ~ label[for=eraser],
-#connector:checked:checked ~label[for=connector],
-#select:checked:checked ~ label[for=select] {
-  border-color: #0069d9;
-  background: #0069d9;
+#select:checked:checked ~ label[for=select],
+#connect:checked:checked ~label[for=connect]
+{
+  border-color: var(--primary-color); /*#0069d9;*/
+  background: var(--primary-color);
 }
 
 #mainTool:checked:checked ~ label[for=mainTool] span,
 #eraser:checked:checked ~ label[for=eraser] span,
-#connector:checked:checked ~label[for=connector] span,
-#select:checked:checked ~ label[for=select] span {
-  color: white;
+#select:checked:checked ~ label[for=select] span,
+#connect:checked:checked ~label[for=connect] span
+{
+  color: var(--text-color);
   transition: all 0.3s ease;
 }
 
@@ -108,9 +96,74 @@ input[type="radio"]{
   user-select: none; /* Standard syntax */
 }
 
-.selected {
-  fill: green;
+/**********************************/
+/*       SVG (only in app)        */
+/**********************************/
+
+svg {
+  width: 300px;
+  margin: 5px;
 }
+
+svg {
+  width: 300px;
+  margin: 2px;
+  border: 3pt solid transparent;
+}
+
+.activeSVG {
+  border: 3pt solid var(--accent-color-lighter);
+}
+
+.background {
+  fill: var(--secondary-color); /* #ffeeee; #f8f8f8; */
+}
+
+/* selection tool */
+.selectRectangle {
+  fill: var(--svg-transparent-dark-color);
+  stroke: var(--svg-transparent-light-color);
+  stroke-width: 1pt;
+}
+
+.static {
+  cursor: not-allowed;
+}
+
+/* .draggable {
+  cursor: move;
+} */
+/* .draggable {
+  cursor: pointer
+} */
+
+.point.selected {
+  fill: var(--svg-selected-color);
+}
+
+.point.draggable:hover {
+  /* fill: none; */
+  stroke: var(--svg-transparent-dark-color);
+  stroke-width: 2pt;
+  /* stroke-dasharray: 2,2; */
+  stroke-linejoin: round;
+  paint-order: stroke;
+  /* outline: 1pt dashed #00000030; */
+}
+
+.line.draggable:hover {
+  outline: 1pt solid var(--svg-transparent-dark-color);
+}
+
+.line.selected {
+  stroke: var(--svg-selected-color);
+}
+
+
+
+
+
+
 
 
 

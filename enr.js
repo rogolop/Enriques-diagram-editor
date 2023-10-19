@@ -20,8 +20,8 @@ var boundaryY2 = 90;
 const Tool = {
 	Main: "mainTool",
 	Eraser: "eraser",
-	Connector: "connector",
-	Select: "select"
+	Select: "select",
+	Connect: "connect",
 };
 const Tools = Object.keys(Tool).map(function(key){return Tool[key];});
 
@@ -57,72 +57,35 @@ var initGlobalState = {
 var GlobalState = initGlobalState;
 
 // Selected <svg> element
-var svg;
+var activeSVG;
 
 function selectSVG(evt) {
-	svg = evt.target;
-	// alert(svg.id);
+	$(activeSVG).attr({
+		class: ""
+	});
+	activeSVG = evt.target;
+	$(activeSVG).attr({
+		class: "activeSVG"
+	});
+	// alert(activeSVG.id);
 }
 
-// // Things to do once the window loads
-// window.addEventListener("load", function() {
-// 	// Code to be executed once the window is loaded (=> once the svg exists?)
-	
-// 	// console.log("fdocumenirst");
-// 	// svg = document.getElementById('mainSVG');
-// 	// console.log(svg);
-	
-// 	var item = document.getElementById('item');
-	
-// 	//### Draw boundary rectangle for confined objects
-// 	// var element = document.createElementNS(xmlns, 'rect');
-// 	// element.setAttributeNS(null, 'x', boundaryX1);
-// 	// element.setAttributeNS(null, 'y', boundaryY1);
-// 	// element.setAttributeNS(null, 'width', boundaryX2 - boundaryX1);
-// 	// element.setAttributeNS(null, 'height', boundaryY2 - boundaryY1);
-// 	// element.setAttributeNS(null, 'fill', '#ccc');
-// 	// // document.getElementById('background').appendChild(element);
-// 	// // svg.appendChild(element);
-// 	// // svg.insertBefore(element, svg.firstChild);
-// 	// svg.insertBefore(element, document.getElementById('background').nextSibling);
-
-// 	//### Draw black circle
-// 	var element = document.createElementNS(xmlns, 'circle');
-// 	element.setAttributeNS(null, 'cx', 50);
-// 	element.setAttributeNS(null, 'cy', 30);
-// 	element.setAttributeNS(null, 'r', 5);
-// 	element.setAttributeNS(null, 'id', 'target');
-// 	element.setAttributeNS(null, 'class', 'draggable');
-// 	svg.appendChild(element);
-	
-// 	//### Draw black circle using jQuery
-// 	var $element = $(document.createElementNS(xmlns, 'circle'));
-// 	$element.attr({
-// 		cx: 100,
-// 		cy: 30,
-// 		r: 5,
-// 		id: 'target',
-// 		class: 'draggable'
-// 	});
-// 	$element.appendTo(svg);
-// 	// svg.appendChild($element);
-// });
-
-var moveSlider = function(slider, direction) {
-	var value = slider.value;
-	var circle = document.getElementById("target");
-	var coord = "c" + direction;
-	circle.setAttributeNS(null, coord, value);
-}
+// var moveSlider = function(slider, direction) {
+// 	var value = slider.value;
+// 	var circle = document.getElementById("target");
+// 	var coord = "c" + direction;
+// 	circle.setAttributeNS(null, coord, value);
+// }
 
 // Download html element with a given id (and its children)
 // Partial Source: https://stackoverflow.com/questions/22084698/how-to-export-source-content-within-div-to-text-html-file
 function downloadInnerHtml(filename, elId, mimeType) {
-	var elHtml = document.getElementById(elId).outerHTML; //.innerHTML; // outerHTML inludes the html element itself, innerHTML only includes children
+	// var elHtml = document.getElementById(elId).outerHTML; //.innerHTML; // outerHTML inludes the html element itself, innerHTML only includes children
+	var elHtml = activeSVG.outerHTML;
 	
 	var cssString;
 	// cssString = $.get("/enr.css");
-	cssString = $.ajax({type: "GET", url: "/enr.css", async: false}).responseText;
+	cssString = $.ajax({type: "GET", url: "/svg.css", async: false}).responseText;
 	// console.log(cssString);
 	
 	elHtml = elHtml.replace("</svg>", "<style>"+cssString+"</style></svg>");
@@ -176,23 +139,6 @@ class myElement {
 	
 	get position() {
 		return this.pos;
-		// // Get all the transforms currently on this element
-		// var transforms = this.element.transform.baseVal;
-		// // Ensure the first transform is a translate transform
-		// if (transforms.length === 0 || transforms.getItem(0).type !== SVGTransform.SVG_TRANSFORM_TRANSLATE) {
-		// 	// Create an transform that translates by (0, 0)
-		// 	let translate = this.svg.createSVGTransform();
-		// 	translate.setTranslate(0, 0);
-		// 	// Add the translation to the front of the transforms list
-		// 	this.element.transform.baseVal.insertItemBefore(translate, 0);
-		// }
-		// // Get initial translation amount
-		// this.transform = transforms.getItem(0);
-		// // Compare mouse position and object position
-		// return {
-		// 	x: this.transform.matrix.e,
-		// 	y: this.transform.matrix.f
-		// };
 	}
 	
 	set position(_pos) {
@@ -205,15 +151,6 @@ class myElement {
 	
 	// move to position
 	moveTo(x, y) {
-		// // -- confine movement
-		// if (this.confined) {
-		// 	if (dx < this.minX) { dx = this.minX; }
-		// 	else if (dx > this.maxX) { dx = this.maxX; }
-		// 	if (dy < this.minY) { dy = this.minY; }
-		// 	else if (dy > this.maxY) { dy = this.maxY; }
-		// }
-		// -- move object
-		// this.transform.setTranslate(dx, dy);
 		this.pos.x = x;
 		this.pos.y = y;
 	}
@@ -236,24 +173,22 @@ class Point extends myElement {
 	constructor(_svg, _pos, _r) {
 		super(_svg, "point"+Point.newID(), _pos);
 		this.r = _r;
-		this.element = this.createCircle(_pos, _r, true);
+		this.element = this.createPoint(_pos, _r, true);
 	}
 	
-	createCircle(pos, r, draggable) {
+	createPoint(pos, r, draggable) {
 		let element = document.createElementNS(xmlns, 'circle');
 		element.setAttributeNS(null, 'id', this.id);
 		element.setAttributeNS(null, 'cx', pos.x);
 		element.setAttributeNS(null, 'cy', pos.y);
 		element.setAttributeNS(null, 'r', r);
 		if (draggable) {
-			element.setAttributeNS(null, 'class', 'draggable');
+			element.setAttributeNS(null, 'class', 'point draggable');
+		} else {
+			element.setAttributeNS(null, 'class', 'point');
 		}
 		element = this.svg.appendChild(element);
 		return element;
-	}
-	
-	moveBy(dx, dy) {
-		this.moveTo(this.pos.x+dx, this.pos.y+dy);
 	}
 	
 	moveTo(x, y) {
@@ -261,6 +196,93 @@ class Point extends myElement {
 		this.element.setAttributeNS(null, 'cy', y);
 		this.pos.x = x;
 		this.pos.y = y;
+	}
+}
+
+class Line extends myElement {
+	static instanceNumber = 0;
+	static newID() {
+		let n = Line.instanceNumber;
+		Line.instanceNumber++;
+		return n;
+	}
+	
+	static new(_elements, _svg, _pos1, _pos2) {
+		let line = new Line(_svg, _pos1, _pos2);
+		_elements[line.id] = line;
+		return line;
+	}
+	
+	constructor(_svg, _pos1, _pos2) {
+		super(_svg, "line"+Line.newID(), _pos1); // _pos1 is temporary
+		this.pos1 = _pos1;
+		this.pos2 = _pos2;
+		this.pos = this.center();
+		this.element = this.createLine(_pos1, _pos2, true);
+	}
+	
+	get position1() {
+		return this.pos1;
+	}
+	
+	get position2() {
+		return this.pos1;
+	}
+	
+	set position1(_pos1) {
+		this.pos1 = _pos1;
+		this.pos = this.center();
+		this.element.setAttributeNS(null, 'x1', this.pos1.x);
+		this.element.setAttributeNS(null, 'y1', this.pos1.y);
+	}
+	
+	set position2(_pos2) {
+		this.pos2 = _pos2;
+		this.pos = this.center();
+		this.element.setAttributeNS(null, 'x2', this.pos2.x);
+		this.element.setAttributeNS(null, 'y2', this.pos2.y);
+	}
+	
+	center() {
+		return {
+			x: (this.pos1.x + this.pos2.x)/2,
+			y: (this.pos1.y + this.pos2.y)/2
+		};
+	}
+	
+	createLine(pos1, pos2, draggable) {
+		let element = document.createElementNS(xmlns, 'line');
+		element.setAttributeNS(null, 'id', this.id);
+		element.setAttributeNS(null, 'x1', this.pos1.x);
+		element.setAttributeNS(null, 'y1', this.pos1.y);
+		element.setAttributeNS(null, 'x2', this.pos2.x);
+		element.setAttributeNS(null, 'y2', this.pos2.y);
+		element.setAttributeNS(null, 'stroke', "black"); // necessary
+		element.setAttributeNS(null, 'stroke-width', 1.5);
+		if (draggable) {
+			element.setAttributeNS(null, 'class', 'line draggable');
+		} else {
+			element.setAttributeNS(null, 'class', 'line');
+		}
+		element = this.svg.appendChild(element);
+		return element;
+	}
+	
+	moveBy(dx, dy) {
+		this.pos.x += dx;
+		this.pos.y += dy;
+		this.pos1.x += dx;
+		this.pos1.y += dy;
+		this.pos2.x += dx;
+		this.pos2.y += dy;
+		this.element.setAttributeNS(null, 'x1', this.pos1.x);
+		this.element.setAttributeNS(null, 'y1', this.pos1.y);
+		this.element.setAttributeNS(null, 'x2', this.pos2.x);
+		this.element.setAttributeNS(null, 'y2', this.pos2.y);
+	}
+	
+	moveTo(x, y) {
+		this.moveBy(x-this.pos.x, y-this.pos.y);
 	}
 }
 
@@ -292,7 +314,6 @@ class mySVG {
 		
 		this.svg = this.$svg[0];
 		
-		
 		this.elements = {};
 		// -- mainTool, erase
 		this.selectedElement = null;
@@ -306,12 +327,9 @@ class mySVG {
 		// -- create elements
 		this.$background = this.addBackground();
 		this.selectRectangle = this.addSelectRectangle();
-		Point.new(this.elements, this.svg, {x:20, y:5}, 4);
-		// let pt = new Point(this.svg, {x:5, y:20}, 4);
-		// this.elements[pt.id] = pt;
-		// this.elements[0].moveBy(10,10);
-		// this.elements[1].position = {x:0, y:30};
-		// alert(this.$svg[0].id);
+		// Point.new(this.elements, this.svg, {x:20, y:5}, 4);
+		Line.new(this.elements, this.svg, {x:0,y:20}, {x:20,y:20});
+		
 		this.makeInteractive();
 	}
 	
@@ -321,7 +339,7 @@ class mySVG {
 			id: 'background',
 			width: '100%',
 			height: '100%'
-		}); //width: this.$svg.attr('width'), height: this.$svg.attr('height')
+		});
 		return bg;
 	};
 	
@@ -363,11 +381,11 @@ class mySVG {
 			case Tool.Eraser:
 				this.eraserClick(evt);
 				break;
-			case Tool.Connector:
-				//
-				break;
 			case Tool.Select:
 				this.selectClick(evt);
+				break;
+			case Tool.Connect:
+				//
 				break;
 			default:
 				break;
@@ -383,11 +401,11 @@ class mySVG {
 			case Tool.Eraser:
 				this.eraserDrag(evt);
 				break;
-			case Tool.Connector:
-				//
-				break;
 			case Tool.Select:
 				this.selectDrag(evt);
+				break;
+			case Tool.Connect:
+				//
 				break;
 			default:
 				break;
@@ -403,11 +421,11 @@ class mySVG {
 			case Tool.Eraser:
 				this.eraserEndDrag(evt);
 				break;
-			case Tool.Connector:
-				//
-				break;
 			case Tool.Select:
 				this.selectEndDrag(evt);
+				break;
+			case Tool.Connect:
+				//
 				break;
 			default:
 				break;
@@ -418,60 +436,29 @@ class mySVG {
 	// -- main tool
 	
 	mainToolClick(evt) {
+		// -- save click position
 		this.lastMousePos = this.getMousePosition(evt);
+		
 		if (evt.buttons & MouseButton.Left) {
-			
 			// -- click on background
 			if (evt.target.id == 'background') {
 				this.unselectAll();
 				// -- create circle at mouse position
 				let pos = this.getMousePosition(evt);
-				// let element = this.createCircle(pos, 2.5, true);
 				let element = Point.new(this.elements, this.svg, pos, 2.5);
 				// -- select created circle
 				this.selectedElement = element;
 				
 				// -- click on draggable element
 			} else if (evt.target.classList.contains('draggable')) {
+				// -- unselect if click on not selected
+				if (!this.selected.includes(evt.target.id)) {
+					this.unselectAll();
+				}
 				// -- Select the clicked element
-				// this.selectedElement = evt.target;
 				this.selectedElement = this.elements[evt.target.id];
 			} else {
 				this.selectedElement = null;
-			}
-			
-			// -- click on element (or newly created from background)
-			if (this.selectedElement) {
-				// -- For confined objects, calculate maximum displacements
-				// this.confined = false;//this.selectedElement.classList.contains('confine');
-				// if (this.confined) {
-				// 	let bbox = this.selectedElement.getBBox(); // bounding box of element
-				// 	this.minX = boundaryX1 - bbox.x;
-				// 	this.maxX = boundaryX2 - bbox.x - bbox.width;
-				// 	this.minY = boundaryY1 - bbox.y;
-				// 	this.maxY = boundaryY2 - bbox.y - bbox.height;
-				// }
-				
-				// -- Calculate mouse offset wrt. object position
-				// -- (to prevent object position from "snapping" to mouse position)
-				// this.lastMousePos = this.getMousePosition(evt);
-				// Get all the transforms currently on this element
-				// var transforms = this.selectedElement.transform.baseVal;
-				// // Ensure the first transform is a translate transform
-				// if (transforms.length === 0 || transforms.getItem(0).type !== SVGTransform.SVG_TRANSFORM_TRANSLATE) {
-				// 	// Create an transform that translates by (0, 0)
-				// 	let translate = this.svg.createSVGTransform();
-				// 	translate.setTranslate(0, 0);
-				// 	// Add the translation to the front of the transforms list
-				// 	this.selectedElement.transform.baseVal.insertItemBefore(translate, 0);
-				// }
-				// // Get initial translation amount
-				// this.transform = transforms.getItem(0);
-				// // Compare mouse position and object position
-				// this.lastMousePos.x -= this.transform.matrix.e;
-				// this.lastMousePos.y -= this.transform.matrix.f;
-				// this.lastMousePos.x -= this.selectedElement.position.x;
-				// this.lastMousePos.y -= this.selectedElement.position.y;
 			}
 		} else if (evt.buttons & MouseButton.Right) {
 			evt.preventDefault();
@@ -485,20 +472,9 @@ class mySVG {
 			let pos = this.getMousePosition(evt);
 			let x = pos.x - this.lastMousePos.x;
 			let y = pos.y - this.lastMousePos.y;
-			this.lastMousePos = pos;
-			// -- drag object
-			if (!this.selected.includes(this.selectedElement.id)) {
-				// -- confine movement
-				// if (this.confined) {
-				// 	if (dx < this.minX) { dx = this.minX; }
-				// 	else if (dx > this.maxX) { dx = this.maxX; }
-				// 	if (dy < this.minY) { dy = this.minY; }
-				// 	else if (dy > this.maxY) { dy = this.maxY; }
-				// }
-				// -- move object
-				// console.log(this.selectedElement);
-				// console.log(this.transform);
-				// this.transform.setTranslate(dx, dy);
+			this.lastMousePos = pos; // update last mouse position
+			// -- drag object(s)
+			if (this.selectedElement && !this.selected.includes(this.selectedElement.id)) {
 				this.selectedElement.moveBy(x, y);
 			}
 			if (this.selected.length > 0) {
@@ -669,6 +645,9 @@ class mySVG {
 		this.dragStart = null;
 	}
 	
+	// -- connect
+	
+	
 }
 
 
@@ -676,10 +655,54 @@ class mySVG {
 
 
 
+/* TESTS */
 
+// class A {
+// 	hello() {
+// 		this.print();
+// 	}
+	
+// 	print() {
+// 		console.log("A");
+// 	}
+// }
 
+// class B extends A {
+// 	print() {
+// 		console.log("B");
+// 	}
+// }
 
+// b = new B();
+// b.hello();
 
+// class A {
+// 	static instanceNumber = 0;
+// 	static newID() {
+// 		let n = A.instanceNumber;
+// 		A.instanceNumber++;
+// 		return n;
+// 	}
+	
+// 	constructor() {
+// 		console.log("A"+A.newID());
+// 	}
+// }
+
+// class B extends A {
+// 	constructor() {
+// 		super();
+// 		console.log("B"+B.newID());
+// 	}
+// }
+
+// var a = new A();
+// a = new A();
+// a = new A();
+// var b = new B();
+
+// console.log(A.instanceNumber);
+// console.log(B.instanceNumber);
 
 
 
