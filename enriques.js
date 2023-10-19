@@ -723,11 +723,20 @@ class mySVG {
 	// -- handle click, drag, end drag
 	
 	doOnClick(evt) {
+		if (evt.changedTouches) {
+			evt = evt.changedTouches[0];
+			this.mouseButtons = MouseButton.Left;
+		} else {
+			this.mouseButtons = evt.buttons;
+		}
 		this.mousePos = this.getMousePosition(evt);
+
+		this.lastMousePos = this.mousePos;
+		
 		this.dragStartMousePos = this.mousePos;
 		this.targetId = evt.target.id;
 		this.targetElement = this.elements[this.targetId];
-		this.mouseButtons = evt.buttons;
+		// this.mouseButtons = evt.buttons;
 		
 		// -- act depending on tool
 		switch (GlobalState.tool) {
@@ -755,11 +764,17 @@ class mySVG {
 	}
 	
 	doOnDrag(evt) {
+		evt.preventDefault();
+		if (evt.changedTouches) { evt = evt.changedTouches[0]; }
 		this.mousePos = this.getMousePosition(evt);
+		
 		this.dx = this.mousePos.x - this.lastMousePos.x;
 		this.dy = this.mousePos.y - this.lastMousePos.y;
 		this.targetId = evt.target.id;
 		this.targetElement = this.elements[this.targetId];
+		
+		// console.log(this.dx, this.dy, this.targetId);
+		// console.log(GlobalState.tool);
 		
 		// -- act depending on tool
 		switch (GlobalState.tool) {
@@ -789,7 +804,9 @@ class mySVG {
 	}
 	
 	doOnEndDrag(evt) {
+		if (evt.changedTouches) { evt = evt.changedTouches[0]; }
 		this.mousePos = this.getMousePosition(evt);
+
 		this.targetId = evt.target.id;
 		this.targetElement = this.elements[this.targetId];
 		
@@ -818,7 +835,6 @@ class mySVG {
 		}
 		
 		this.mouseButtons = 0;
-		
 	}
 	
 	doOnMouseOver(evt) {
@@ -1829,31 +1845,59 @@ class mySVG {
 		let d = distance(parent.pos, pos);
 		if (parentId == this.basePoint) {
 			let s = Math.sign(pos.y-parent.pos.y);
-			startTangent = {x: 0, y: d/3*s};
-			endTangent = rotate(startTangent, Math.PI/2*s);
+			startTangent = {x: 0, y: s};// d/3*s};
+			// endTangent = rotate(startTangent, Math.PI/2*s);
 		} else if (infinitelyClosePointTypes.includes(parent.type)) {
 			startTangent = this.elements[parent.curve].getTangentAt(1);
-			
-			startTangent = normalized(startTangent);
-			let n = directionFromTo(parent.position, pos);
-			n = {x: n.y, y: -n.x};
-			endTangent = {
-				x: -(parent.position.x + startTangent.x*d*2/3 - pos.x),
-				y:  -(parent.position.y + startTangent.y*d*2/3 - pos.y)
-			};
-			startTangent = {x: startTangent.x*d/3, y: startTangent.y*d/3};
-			// startTangent = normalized(startTangent);
-			// let n = directionFromTo(parent.position, pos);
-			// n = {x: n.y, y: -n.x};
-			// let start_dot_n = startTangent.x * n.x + startTangent.y * n.y;
-			// let c = 3 - Math.abs(start_dot_n);
-			// startTangent = {x: startTangent.x*d/c, y: startTangent.y*d/c};
-			// start_dot_n = start_dot_n*d/c;
-			// endTangent = {
-			// 	x: startTangent.x - 2*start_dot_n*n.x,
-			// 	y: startTangent.y - 2*start_dot_n*n.y,
-			// };
 		}
+		startTangent = normalized(startTangent);
+		
+		let n = directionFromTo(parent.position, pos);
+		n = {x: n.y, y: -n.x};
+		endTangent = {
+			x: -(parent.position.x + startTangent.x*d*1/2 - pos.x)/4,
+			y:  -(parent.position.y + startTangent.y*d*1/2 - pos.y)/4
+		};
+		startTangent = {x: startTangent.x*d/2, y: startTangent.y*d/2};
+		
+		// startTangent = normalized(startTangent);
+		// let n = directionFromTo(parent.position, pos);
+		// n = {x: n.y, y: -n.x};
+		// let start_dot_n = startTangent.x * n.x + startTangent.y * n.y;
+		// let c = 3 - Math.abs(start_dot_n);
+		// startTangent = {x: startTangent.x*d/c, y: startTangent.y*d/c};
+		// start_dot_n = start_dot_n*d/c;
+		// endTangent = {
+		// 	x: startTangent.x - 2*start_dot_n*n.x,
+		// 	y: startTangent.y - 2*start_dot_n*n.y,
+		// };
+		
+		// let dp = normalized(directionFromTo(parent.position, pos));
+		// let n = {x: dp.y, y: -dp.x};
+		// let start_dot_n = startTangent.x * n.x + startTangent.y * n.y;
+		// let start_dot_dp = startTangent.x * dp.x + startTangent.y * dp.y;
+		// let c = 3 - Math.abs(start_dot_n);
+		// startTangent = {x: startTangent.x*d/3, y: startTangent.y*d/3};
+		// // start_dot_n = start_dot_n*d/3;
+		// let f = (0.5 + 0.5*start_dot_dp);
+		// // if (start_dot_dp > 0) {
+		// // 	endTangent = {
+		// // 		x: startTangent.x - 2*start_dot_n*n.x,
+		// // 		y: startTangent.y - 2*start_dot_n*n.y
+		// // 	};
+		// // } else {
+		// // 	endTangent = {
+		// // 		x: -startTangent.x*(1-2*start_dot_dp),
+		// // 		y: -startTangent.y*(1-2*start_dot_dp)
+		// // 	}
+		// // }
+		// let angle = (Math.abs(start_dot_dp) >= 1)? 0 : Math.acos(start_dot_dp);
+		// endTangent = {
+		// 	x: startTangent.x*(start_dot_dp-0.5) + d/3* dp.x * (1-(start_dot_dp-0.5)),
+		// 	y: startTangent.y*(start_dot_dp-0.5) + d/3* dp.y * (1-(start_dot_dp-0.5))
+		// };
+		
+	
 		pt = LastFreePoint.new(this.elements, this.lineGroup, this.pointGroup, parent, pos, 4, startTangent, endTangent);
 		this.points.push(pt.id);
 		this.lines.push(pt.curve);
@@ -1930,8 +1974,8 @@ class mySVG {
 	// -- get mouse position in SVG coordinates
 	getMousePosition(evt) {
 		var CTM = this.svg.getScreenCTM(); // Current Transformation Matrix
+		// if (evt.changedTouches) { evt = evt.changedTouches[0]; }
 		// Invert the SVG->screen transformation
-		if (evt.touches) { evt = evt.touches[0]; }
 		return {
 			x: (evt.clientX - CTM.e) / CTM.a,
 			y: (evt.clientY - CTM.f) / CTM.d

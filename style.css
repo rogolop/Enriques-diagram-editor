@@ -118,6 +118,7 @@ div {
 	display: block;
 	gap: 5px;
 	top: 56px;
+	box-sizing: border-box;
 	width: 100%;
 	height: fit-content;
 	z-index: 10;
