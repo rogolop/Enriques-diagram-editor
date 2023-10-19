@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+	<rect class="background" id="background" width="100%" height="100%" fill="white"></rect>
+	<path d="M 25 75 C 25 45, 45 25, 75 25" stroke="black" fill-opacity="0" stroke-width="10"/>
+	<line x1="75" y1="25" x2="75" y2="75" stroke="black" stroke-width="10" class="line"></line>
+	<circle cx="25" cy="75" r="15" class="point"></circle>
+	<circle cx="75" cy="25" r="15" class="point"></circle>
+	<circle cx="75" cy="75" r="15" class="point"></circle>
+</svg>

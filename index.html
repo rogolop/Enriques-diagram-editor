@@ -1,13 +1,11 @@
 <!DOCTYPE HTML>
 <html lang="en">
-
-
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Enriques diagram creator</title>
-
-	<link rel="icon" type="image/ico" href="/favicon.ico">
+	<title>Enriques diagram generator</title>
+	
+	<link rel="icon" type="image/ico" href="cusp.ico">
 	<!-- <link rel="stylesheet" type="text/css" href="svg.css"> -->
 	<link rel="stylesheet" type="text/css" href="style.css">
 
@@ -15,49 +13,56 @@
 	<script type="text/javascript" src="enriques.js"></script>
 </head>
 
-
-
 <body>
-	<button id="downloadButton" onClick="downloadInnerHtml('diagram.svg')">
-		<span class="prevent-select">Download</span>
-	</button>
-	<!-- <a href="#" id="downloadLink">Download the inner html</a> -->
+	<header id="header-container">
+		<div id="start">
+			<a id="site-link" href="/" title="Enriques diagram generator">
+				<div id="logo-icon">
+					<img id="site-logo" src="cusp.svg" alt="cusp.svg" focusable="false" class="not-selectable">
+				</div>
+				<span id="site-span" class="not-selectable">Enriques diagram generator</span>
+			</a>
+		</div>
+	</header>
 	
-	<!-- <button onClick="toggleErasing()">Toggle erase</button> -->
-	<input type="radio" name="tool" id="mainTool" value="mainTool">
-	<input type="radio" name="tool" id="eraser" value="eraser">
-	<input type="radio" name="tool" id="select" value="select">
-	<input type="radio" name="tool" id="free" value="free">
+	<div class="toolbar">
+		<button id="downloadButton" onClick="downloadInnerHtml('diagram.svg')" class="toolLabel not-selectable">
+			Download
+		</button>
+		
+		<input type="radio" name="tool" id="mainTool" value="mainTool">
+		<label for="mainTool" class="toolLabel not-selectable">
+			mainTool
+		</label>
+		
+		<input type="radio" name="tool" id="free" value="free">
+		<label for="free" class="toolLabel not-selectable">
+			free
+		</label>
+		
+		<input type="radio" name="tool" id="select" value="select">
+		<label for="select" class="toolLabel not-selectable">
+			select
+		</label>
+		
+		<input type="radio" name="tool" id="eraser" value="eraser">
+		<label for="eraser" class="toolLabel not-selectable">
+			eraser
+		</label>
+	</div>
 	
-	<label for="mainTool" class="toolLabel">
-		<span class="prevent-select">mainTool</span>
-	</label>
-	<label for="free" class="toolLabel">
-		<span class="prevent-select">free</span>
-	</label>
-	<label for="select" class="toolLabel">
-		<span class="prevent-select">select</span>
-	</label>
-	<label for="eraser" class="toolLabel">
-		<span class="prevent-select">eraser</span>
-	</label>
-	
-	
-	<!-- <input type="range" min="1" max="100" value="50" oninput="moveSlider(this, 'x')"/>
-	<input type="range" min="1" max="100" value="50" oninput="moveSlider(this, 'y')"/> -->
-	
-	<br>
-	<br>
-	
-	<!-- <div id="taco" class="svg-wrapper" style="width: 50%"></div> -->
-	<div id="taco" class="svg-wrapper"></div>
-	
-	<script type="text/javascript">
-		// (function() {
-			var svggg = new mySVG(200, 100, 'taco', 'svggg');
-			svggg.svg.setAttribute("height", "250px");
-			// svggg.createExampleDiagram();
-		// })();
-	</script>
-	<noscript>Sorry, your browser does not support JavaScript!</noscript>
+	<div id="content-container">
+		<script type="text/javascript">
+			// (function() {
+				var svggg = new mySVG(200, 100, 'content-container', 'svggg');
+				// svggg.svg.setAttribute("height", "250px");
+				// svggg.createExampleDiagram();
+				// var svg1 = new mySVG(200, 100, 'content-container');
+				// svg1.svg.setAttribute("height", "250px");
+				// var svg2 = new mySVG(200, 100, 'content-container');
+				// svg2.svg.setAttribute("height", "250px");
+			// })();
+		</script>
+		<noscript>Sorry, your browser does not support JavaScript!</noscript>
+	</div>
 </body>

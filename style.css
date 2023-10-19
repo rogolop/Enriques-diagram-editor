@@ -2,17 +2,18 @@
 /*            General             */
 /**********************************/
 
-html {
+html * {
 	font-family: Arial, Helvetica, sans-serif;
 }
 
 :root {
 	--text-color: #ffffff;
-	--background--color: #36373a;
+	--background-color: #36373a;
 	--primary-color: #1c57a8;
 	--secondary-color: #e0dad0;
 	--accent-color: #2d7a2d;
 	
+	--background-color-darker: #212224;
 	--text-color-inverted: #000000;
 	--accent-color-lighter: #64a564; /*#44b844; */
 	
@@ -24,31 +25,124 @@ html {
 }
 
 body {
-	background-color: var(--background--color);
+	background-color: var(--background-color);
+	margin: 0;
 }
 
-/* Donwload button */
-#downloadButton {
-	background: var(--accent-color); /*#5c5;*/
-	height: 2em;
-	width: 5em;
-	box-sizing: content-box;
-	display: inline-flex;
-	align-items: center;
-	justify-content: space-evenly;
-	margin: 0 0pt;
-	/* border-radius: 5px; */
-	cursor: pointer;
-	/* padding: 0 10px; */
-	border: 0px solid var(--accent-color); /*#8f8;*/
-	font-size: 20px;
+.not-selectable {
+	/* Prevent text selection */
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
+div {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: transparent;
 	color: var(--text-color);
 }
 
 /**********************************/
-/*      Custom radio buttons      */
+/*             Header             */
 /**********************************/
 
+#header-container {
+	height: 56px;
+	padding: 0 16px;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	background: var(--background-color-darker);
+	
+	position: fixed;
+	top: 0;
+	width: 100%;
+}
+
+#start {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+}
+
+#logo-icon {
+	height: 40px;
+	width: 40px;
+	padding: 5px;
+	margin-right: 5px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	position: relative;
+	vertical-align: middle;
+	cursor: pointer;
+}
+
+#site-logo {
+	pointer-events: none;
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+#site-link {
+	color: var(--text-color);
+	text-decoration: none !important;
+	font-size: 22px;
+	max-height: 50px;
+	overflow: hidden;
+}
+
+#site-span {
+	vertical-align: middle;
+}
+
+/**********************************/
+/*            Toolbar             */
+/**********************************/
+
+.toolbar {
+	/* overflow: hidden; */
+	position: sticky;
+	display: block;
+	top: 56px;
+	width: 100%;
+	height: fit-content;
+	z-index: 10;
+	background-color: var(--background-color);
+	border: solid var(--background-color-darker);
+	border-width: 0 0 2px 0;
+}
+
+/* Style the links inside the navigation bar */
+.toolbar button {
+	/* float: left; */
+	/* color: var(--primary-color);  */
+	/* #f2f2f2; */
+	/* text-align: center; */
+	/* padding: 15px 15px; */
+	/* font-size: 17px; */
+	border: none;
+	/* text-decoration: none; */
+	/* display: inline-block; */
+	/* margin: auto; */
+	box-sizing: content-box;
+	/* box-sizing: border-box; */
+	/* height: 50px; */
+}
+
+#downloadButton {
+	background: var(--accent-color);
+	color: var(--text-color)
+}
+
+/*      Custom radio buttons      */
 .toolLabel {
 	background: var(--secondary-color);
 	height: 2em;
@@ -64,52 +158,54 @@ body {
 	transition: all 0.3s ease;
 }
 
-.toolLabel span{
+.toolLabel span {
 	font-size: 20px;
 	color: var(--text-color-inverted);
 }
 
-#mainTool:checked:checked ~ label[for=mainTool],
-#eraser:checked:checked ~ label[for=eraser],
-#select:checked:checked ~ label[for=select],
-#free:checked:checked ~label[for=free]
-{
-	border-color: var(--primary-color); /*#0069d9;*/
-	background: var(--primary-color);
+.toolLabel {
+	font-size: 20px;
+	color: var(--text-color-inverted);
+	margin: 5px 0 5px 5px;
 }
 
-#mainTool:checked:checked ~ label[for=mainTool] span,
-#eraser:checked:checked ~ label[for=eraser] span,
-#select:checked:checked ~ label[for=select] span,
-#free:checked:checked ~label[for=free] span
-{
+input[type=radio]:checked + label {
+	border-color: var(--primary-color);
+	background: var(--primary-color);
 	color: var(--text-color);
 	transition: all 0.3s ease;
 }
 
-input[type="radio"]{
+input[type="radio"] {
 	display: none;
 }
 
-.prevent-select {
-	/* Prevent text selection */
-	-webkit-user-select: none; /* Safari */
-	-ms-user-select: none; /* IE 10 and IE 11 */
-	user-select: none; /* Standard syntax */
-}
 
 /**********************************/
-/*       SVG (only in app)        */
+/*            Content             */
 /**********************************/
 
-.svg-wrapper {
-	display: inline-block;  
+#content-container {
+	padding: 24px;
+	margin-top: calc(56px);
+	/* overflow: hidden; */
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
 }
+
+
+
+
+/**********************************/
+/*       SVG (interactive)        */
+/**********************************/
 
 svg {
-	margin: 2px;
+	/* margin: 0 5px 5px 0; */
 	border: 3pt solid transparent;
-	width: min(calc(100% - 6pt - 4px), 800px);
+	width: min(calc(100%), 800px);
+	box-sizing: border-box;
 }
 
 .activeSVG {
@@ -151,10 +247,6 @@ svg {
 	paint-order: stroke;
 	/* outline: 1pt dashed #00000030; */
 }
-/* 
-svg.eraser .point.draggable:hover {
-	fill: red;
-} */
 
 .point.highlight {
 	fill: var(--svg-deletePoint-color) !important;
@@ -163,14 +255,28 @@ svg.eraser .point.draggable:hover {
 .line.highlight {
 	stroke: var(--svg-deletePoint-color) !important;
 }
+
 /* .line.draggable:hover {
 	outline: 1pt solid var(--svg-transparent-dark-color);
 } */
 
-
 .line.selected {
 	stroke: var(--svg-selected-color);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -201,10 +307,9 @@ svg.eraser .point.draggable:hover {
 */
 
 .interactiveSVG .background {
-	fill: #eeffee; /* #f8f8f8; */
+	fill: #eeffee;
 }
 
-/*  Elements can be points (filled) or lines */
 .interactiveSVG .point {
 	stroke: #f8f8f8;
 	stroke-width: 1;
