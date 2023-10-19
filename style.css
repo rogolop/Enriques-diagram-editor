@@ -64,7 +64,7 @@ div {
 	align-items: center;
 	justify-content: space-between;
 	background: var(--background-color-darker);
-	
+	box-sizing: border-box;
 	position: fixed;
 	top: 0;
 	width: 100%;
@@ -100,6 +100,13 @@ div {
 	color: var(--text-color);
 	text-decoration: none !important;
 	font-size: 22px;
+	max-height: 50px;
+	overflow: hidden;
+}
+
+#github-link {
+	color: var(--text-color);
+	text-decoration: none !important;
 	max-height: 50px;
 	overflow: hidden;
 }
