@@ -44,7 +44,9 @@ body {
 	user-select: none;
 }
 
-div {
+div,
+nav,
+main {
 	margin: 0;
 	padding: 0;
 	border: 0;
@@ -56,9 +58,10 @@ div {
 /*             Header             */
 /**********************************/
 
-#header-container {
+#header {
 	height: 56px;
 	padding: 0 16px;
+	padding: 5px 20px;
 	display: flex;
 	flex-direction: row;
 	align-items: center;
@@ -68,52 +71,51 @@ div {
 	position: fixed;
 	top: 0;
 	width: 100%;
+	overflow: hidden;
 }
 
-#start {
-	display: flex;
-	flex-direction: row;
-	align-items: center;
-}
-
-#logo-icon {
-	height: 40px;
-	width: 40px;
-	padding: 5px;
-	margin-right: 5px;
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	position: relative;
-	vertical-align: middle;
-	cursor: pointer;
+#site-link {
+	max-height: 50px;
+	/* overflow: hidden; */
+	white-space: nowrap;
 }
 
 #site-logo {
 	pointer-events: none;
-	display: block;
-	width: 100%;
-	height: 100%;
+	height: 40px;
+	width: 40px;
+	/* padding: 5px; */
+	margin-right: 10px;
+	/* border: 0; */
+	display: inline-flex;
+	/* align-items: center; */
+	/* justify-content: center; */
+	/* position: relative; */
+	vertical-align: middle;
+	cursor: pointer;
+	border-radius: 3px;
 }
 
-#site-link {
-	color: var(--text-color);
+#site-span {
+	vertical-align: middle;
+	overflow: hidden;
+	white-space: nowrap;
 	text-decoration: none !important;
 	font-size: 22px;
-	max-height: 50px;
-	overflow: hidden;
+	color: var(--text-color);
+	display: inline-block;
+	font-weight: 400;
+	margin: 0;
 }
 
 #github-link {
 	color: var(--text-color);
 	text-decoration: none !important;
 	max-height: 50px;
+	margin-left: 10px;
 	overflow: hidden;
 }
 
-#site-span {
-	vertical-align: middle;
-}
 
 /**********************************/
 /*            Toolbar             */
@@ -156,6 +158,7 @@ div {
 	background: var(--accent-color);
 	color: var(--text-color-inverted);
 	border: 3px solid var(--accent-color);
+	border-radius: 6px;
 	/* margin: 0 15px 0 0; */
 	gap: 0;
 	padding: 0 10px;
@@ -163,11 +166,12 @@ div {
 
 #downloadButton:hover {
 	/* background: var(--accent-color-lighter); */
-	border: 3px solid var(--primary-color);
-}
-
-#downloadButton:active {
 	background: var(--primary-color);
+	border-color: var(--primary-color);
+}
+	
+#downloadButton:active {
+	border-color: var(--primary-color);
 }
 /* 
 .toolbar button {
@@ -193,17 +197,17 @@ div {
 	align-items: center;
 	justify-content: space-evenly;
 	vertical-align: top;
-	border-radius: 5px;
 	cursor: pointer;
 	padding: 0;
 	/* border: 2px solid lightgrey; */
 	border: 3px solid var(--background-color);
+	border-radius: 6px;
 	/* transition: all 0.3s ease; */
 	box-sizing: border-box;
 	font-size: 20px;
 	color: var(--text-color);
 	/* var(--text-color-inverted); */
-	margin: 0;
+	margin: 0 2px;
 }
 
 /* .toolLabel span { */
@@ -213,12 +217,13 @@ div {
 /* } */
 
 .toolLabel:hover {
-	border: 3px solid var(--background-color-darker);
+	border-color: var(--background-color-darker);
+	background: var(--background-color-darker);
 	/* transition: all 0s ease; */
 }
 
 input[type=radio]:checked + label {
-	border-color: var(--background-color-darker);
+	border-color: var(--accent-color);
 	background: var(--background-color-darker);
 	/* var(--primary-color); */
 	color: var(--text-color);
@@ -269,8 +274,8 @@ table {
 /*            Content             */
 /**********************************/
 
-#content-container {
-	padding: 24px;
+#content {
+	padding: 20px;
 	margin-top: calc(56px);
 	/* overflow: hidden; */
 	display: flex;
@@ -286,9 +291,10 @@ table {
 /**********************************/
 
 svg {
-	/* margin: 0 5px 5px 0; */
-	border: 3pt solid transparent;
-	width: min(calc(100%), 800px);
+	border: 3px solid transparent;
+	border-radius: 3px;
+	max-height: max(calc(100vh - 150px),200px);
+	/* width: min(calc(100%), 800px); */
 	box-sizing: border-box;
 }
 

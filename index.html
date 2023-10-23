@@ -3,88 +3,93 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	
 	<title>Enriques diagram editor</title>
+	<meta name="description" content="Web-based graphical editor for Enriques diagrams.">
 	
 	<link rel="icon" type="image/ico" href="siteLogo/cusp.ico">
 	<!-- <link rel="stylesheet" type="text/css" href="svg.css"> -->
 	<link rel="stylesheet" type="text/css" href="style.css">
-
+	
 	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
 	<script type="text/javascript" src="enriques.js"></script>
 </head>
 
 <body>
-	<header id="header-container">
-		<div id="start">
-			<a id="site-link" href="index.html" title="Enriques diagram editor">
-				<div id="logo-icon">
-					<img id="site-logo" src="siteLogo/cusp.svg" alt="siteLogo/cusp.svg" focusable="false" style="border-radius: 3px">
-				</div
-				><span id="site-span">Enriques diagram editor</span>
-			</a>
-		</div>
-		<div>
-			<a id="github-link" href="https://github.com/rogolop/Enriques-diagram-editor" title="Enriques diagram editor">
-				<span>GitHub</span>
-			</a>
-		</div>
+	<header id="header">
+		<a id="site-link" href="index.html" title="Enriques diagram editor">
+			<img id="site-logo" src="siteLogo/cusp.svg" alt="siteLogo/cusp.svg" focusable="false"
+			><h1 id="site-span">Enriques diagram editor</h1>
+		</a>
+		<a id="github-link" href="https://github.com/rogolop/Enriques-diagram-editor" title="Enriques diagram editor">
+			<span>GitHub</span>
+		</a>
 	</header>
 	
-	<div class="toolbar">
+	<nav class="toolbar">
 		<button id="downloadButton" onClick="downloadInnerHtml('diagram.svg')" class="toolLabel not-selectable" title="Download SVG">
 			<span style="margin-right: 5px;">Download</span>
 			<img src = "tools/download.svg" alt="tools/download.svg" draggable="false"/>
 		</button
+		
 		><div class="vl"></div
 		><input type="radio" name="tool" id="mainTool" value="mainTool"
-		><label for="mainTool" class="toolLabel not-selectable" title="Move, select, edit curves" onClick="checkRadio(this)">
+		><label for="mainTool" class="toolLabel not-selectable" title="Move, select, edit curves" onClick="checkRadio(this)" onkeyup="checkRadioOnKeyEnterUp(event, this)" tabindex="0">
 			<img src = "tools/main.svg" alt="tools/main.svg" draggable="false"/>
 		</label
+		
+		><!-- 
 		><input type="radio" name="tool" id="select" value="select"
-		><label for="select" class="toolLabel not-selectable" title="Select" onClick="checkRadio(this)">
+		><label for="select" class="toolLabel not-selectable" title="Select" onClick="checkRadio(this)" onkeyup="checkRadioOnKeyEnterUp(event, this)" tabindex="0">
 			<img src = "tools/select.svg" alt="tools/select.svg" draggable="false"/>
 		</label
-		><input type="radio" name="tool" id="eraser" value="eraser"
-		><label for="eraser" class="toolLabel not-selectable" title="Erase" onClick="checkRadio(this)">
-			<img src = "tools/eraser.svg" alt="tools/eraser.svg" draggable="false"/>
-		</label
-		><input type="radio" name="tool" id="free" value="free"
-		><label for="free" class="toolLabel not-selectable" title="Add free point" onClick="checkRadio(this)">
+		
+		> --><input type="radio" name="tool" id="free" value="free"
+		><label for="free" class="toolLabel not-selectable" title="Add free point" onClick="checkRadio(this)" onkeyup="checkRadioOnKeyEnterUp(event, this)" tabindex="0">
 			<img src = "tools/free.svg" alt="tools/free.svg" draggable="false"/>
 		</label
+		
 		><input type="radio" name="tool" id="satellite" value="satellite"
-		><label for="satellite" class="toolLabel not-selectable" title="Add satellite point" onClick="checkRadio(this)">
+		><label for="satellite" class="toolLabel not-selectable" title="Add satellite point" onClick="checkRadio(this)" onkeyup="checkRadioOnKeyEnterUp(event, this)" tabindex="0">
 			<img src = "tools/satellite.svg" alt="tools/satellite.svg" draggable="false"/>
 		</label
-		><input type="radio" name="tool" id="curveEdit" value="curveEdit"
-		><label for="curveEdit" class="toolLabel not-selectable" title="Edit curves" onClick="checkRadio(this)">
+		
+		><input type="radio" name="tool" id="eraser" value="eraser"
+		><label for="eraser" class="toolLabel not-selectable" title="Erase" onClick="checkRadio(this)" onkeyup="checkRadioOnKeyEnterUp(event, this)" tabindex="0">
+			<img src = "tools/eraser.svg" alt="tools/eraser.svg" draggable="false"/>
+		</label
+		
+		><!-- 
+		<input type="radio" name="tool" id="curveEdit" value="curveEdit"
+		><label for="curveEdit" class="toolLabel not-selectable" title="Edit curves" onClick="checkRadio(this)" onkeyup="checkRadioOnKeyEnterUp(event, this)" tabindex="0">
 			<img src = "tools/curveEdit.svg" alt="tools/curveEdit.svg" draggable="false"/>
 		</label
-		><div class="vl"></div
+		
+		>--><div class="vl"></div
 		><table style="display: inline-flex;"  class="not-selectable">
 			<tr>
-				<td>Width</td>
-				<td><input type="number" name="svgSize" id="svgWidth" value="200" min="1" autocomplete="off"></td>
+				<td><label for="svgWidth">Width</label></td>
+				<td><input type="number" name="svgSize" id="svgWidth" value="200" min="50" max="1000" step="50" autocomplete="off"></td>
 			</tr>
 			<tr>
-				<td>Height</td>
-				<td><input type="number" name="svgSize" id="svgHeight" value="100" min="1" autocomplete="off"></td>
+				<td><label for="svgHeight">Height</label></td>
+				<td><input type="number" name="svgSize" id="svgHeight" value="100" min="50" max="1000" step="50" autocomplete="off"></td>
 			</tr>
 		</table>
-	</div>
+	</nav>
 	
-	<div id="content-container">
+	<main id="content">
 		<script type="text/javascript">
 			// (function() {
-				var svggg = new mySVG(200, 100, 'content-container', 'svggg');
+				var svggg = new mySVG(200, 100, 'content', 'svggg');
 				// svggg.svg.setAttribute("height", "250px");
 				// svggg.createExampleDiagram();
-				// var svg1 = new mySVG(200, 100, 'content-container');
+				// var svg1 = new mySVG(200, 100, 'content');
 				// svg1.svg.setAttribute("height", "250px");
-				// var svg2 = new mySVG(200, 100, 'content-container');
+				// var svg2 = new mySVG(200, 100, 'content');
 				// svg2.svg.setAttribute("height", "250px");
 			// })();
 		</script>
 		<noscript>Sorry, your browser does not support JavaScript!</noscript>
-	</div>
+	</main>
 </body>

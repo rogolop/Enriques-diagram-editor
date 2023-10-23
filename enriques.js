@@ -167,6 +167,10 @@ $(function() {
 	});
 });
 
+function checkRadioOnKeyEnterUp(evt, label){
+	if (evt.key === "Enter") checkRadio(label);
+}
+
 function checkRadio(label) {
 	let input = $("#"+label.getAttribute("for"));
 	input.prop("checked", true);
