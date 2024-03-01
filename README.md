@@ -7,7 +7,7 @@
 - Available online [here](https://rogolop.github.io/Enriques-diagram-editor/).
 
 ## Tips
-### How to include the downloaded TikZ in LaTeX
+### How to include the downloaded TikZ file in LaTeX
 A TikZ file is a plain text file containing a `tikzpicture` LaTeX environment from the [pgf/tikz package](https://ctan.org/pkg/pgf), which describes a vector image. It can be embedded into a LaTeX document using the `\input` command. Alternatively, its contents can be copied directly into the document.
 
 Example:
@@ -25,7 +25,7 @@ Example:
 \end{document}
 ```
 
-### How to include the downloaded SVG in LaTeX
+### How to include the downloaded SVG file in LaTeX
 An SVG file is a plain text file defining a vector image in the SVG format (an XML-based  format compatible with browsers). It can be embedded into a LaTeX document using the `\includesvg` command of the [svg package](https://ctan.org/pkg/svg) (this package needs the compile option `--shell-escape` and depends on [Inkscape](https://inkscape.org/)).
 
 Example:
