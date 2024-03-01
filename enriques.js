@@ -135,6 +135,56 @@ function downloadInnerHtml(filename) {
 	// link.click(); 
 }
 
+function downloadAsTikZ(filename) {
+	var mimeType = 'text/plain'; //'image/svg+xml';
+	
+	active_mySVG.hideToolGUI();
+	
+	const viewBox = activeSVG.getAttribute("viewBox").split(" ");
+	const width = viewBox[2] - viewBox[0];
+	const height = viewBox[3] - viewBox[1];
+	
+	// Tikz header
+	var fileContent = `\\begin{tikzpicture}[x=${width}pt,y=${height}pt,yscale=-1,xscale=1,
+    inner sep=0pt,
+    inner ysep=0pt,
+    outer xsep=0pt,
+    outer ysep=0pt,
+    outer sep=0pt,
+    inner xsep=0pt,
+    ]
+	\\fill[transparent] (0pt,0pt) rectangle (${width}pt,${height}pt);
+	\n`;
+	
+	// Tikz content
+	
+	let drawableShapes = active_mySVG.getDrawableShapes();
+	for (const shape of drawableShapes) {
+		if (shape.type == "circle") {
+			fileContent += `    \\fill[black] (${shape.pos.x}pt,${shape.pos.y}pt) circle [radius=${shape.r}pt];\n`;
+			
+		} else if (shape.type == "line") {
+			fileContent += `    \\draw[line width=1.5] (${shape.pos1.x}pt,${shape.pos1.y}pt) -- (${shape.pos2.x}pt,${shape.pos2.y}pt);\n`;
+			
+		} else if (shape.type == "curve") {
+			fileContent += `    \\draw[line width=1.5] (${shape.pos1.x}pt,${shape.pos1.y}pt) .. controls (${shape.posC1.x}pt,${shape.posC1.y}pt) and (${shape.posC2.x}pt,${shape.posC2.y}pt) .. (${shape.pos2.x}pt,${shape.pos2.y}pt);\n`;
+			
+		} else {
+			console.log(shape);
+		}
+	}
+	
+	// Tikz end of file
+	fileContent += "\n\\end{tikzpicture}%";
+	
+	// -- download
+	var link = document.createElement('a');
+	mimeType = mimeType || 'text/plain';
+	link.setAttribute('download', filename);
+	link.setAttribute('href', 'data:' + mimeType  +  ';charset=utf-8,' + encodeURIComponent(fileContent));
+	link.click();
+}
+
 /////////////////////////////////////////////////////////////////////
 
 // When the page has completed loading (jQuery ready() function)
@@ -252,6 +302,8 @@ class myElement {
 		this.pos.x = x;
 		this.pos.y = y;
 	}
+	
+	getDrawableData() {return {type:"none"};}
 }
 
 class Point extends myElement {
@@ -298,6 +350,8 @@ class Point extends myElement {
 		this.pos.x = x;
 		this.pos.y = y;
 	}
+	
+	getDrawableData() {return {type:"circle", pos:this.pos, r:this.r};}
 }
 
 class Line extends myElement {
@@ -385,6 +439,8 @@ class Line extends myElement {
 			y: this.pos2.y - this.pos1.y
 		};
 	}
+	
+	getDrawableData() {return {type:"line", pos1:this.pos1, pos2:this.pos2};}
 }
 
 class Curve extends myElement {
@@ -506,6 +562,8 @@ class Curve extends myElement {
 			y: 3*(1-t)**2*(this.posC1.y-this.pos1.y) + 6*(1-t)*t*(this.posC2.y-this.posC1.y) + 3*t**2*(this.pos2.y-this.posC2.y)
 		};
 	}
+	
+	getDrawableData() {return {type:"curve", pos1:this.pos1, pos2:this.pos2, posC1:this.posC1, posC2:this.posC2};}
 }
 
 class LineFromTo extends Line {
@@ -691,6 +749,7 @@ class mySVG {
 		// -- create Enriques base point
 		let pt = BasePoint.new(this.elements, this.pointGroup, {x:20, y:70}, 6);
 		this.basePoint = pt.id; // id
+		this.points.push(pt.id);
 		this.selectElement(this.basePoint);
 		
 		// -- create example diagram
@@ -1113,7 +1172,7 @@ class mySVG {
 		}
 	}
 	
-	// -- free
+	// -- satellite
 	
 	satelliteClick(evt) {
 		if (this.mouseButtons & MouseButton.Left) {
@@ -1478,6 +1537,8 @@ class mySVG {
 			line.point2 = null;
 			
 			// -- remove from mySVG
+			this.lines = this.lines.filter(elt => elt !== line.id);
+			this.points = this.points.filter(elt => elt !== descendant.id);
 			delete this.elements[line.id];
 			delete this.elements[descendant.id];
 		}
@@ -1984,6 +2045,18 @@ class mySVG {
 			x: (evt.clientX - CTM.e) / CTM.a,
 			y: (evt.clientY - CTM.f) / CTM.d
 		};
+	}
+	
+	// --
+	getDrawableShapes() {
+		let shapes = [];
+		const drawableElement = this.points.concat(this.lines);
+		for (const id of drawableElement) {
+			const element = this.elements[id];
+			shapes.push(element.getDrawableData());
+		}
+		console.log(shapes);
+		return shapes;
 	}
 }
 

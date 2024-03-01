@@ -154,7 +154,8 @@ main {
 	/* height: 50px; */
 /* } */
 
-#downloadButton {
+#downloadButton,
+#downloadTikZ {
 	background: var(--accent-color);
 	color: var(--text-color-inverted);
 	border: 3px solid var(--accent-color);
@@ -162,6 +163,10 @@ main {
 	/* margin: 0 15px 0 0; */
 	gap: 0;
 	padding: 0 10px;
+}
+
+#downloadButton {
+	margin-right: 5px;
 }
 
 #downloadButton:hover {
