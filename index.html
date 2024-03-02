@@ -7,7 +7,7 @@
 	<title>Enriques diagram editor</title>
 	<meta name="description" content="Web-based graphical editor for Enriques diagrams.">
 	
-	<link rel="icon" type="image/ico" href="siteLogo/cusp.ico">
+	<link rel="icon" type="image/ico" href="icons/siteLogo/cusp.ico">
 	<!-- <link rel="stylesheet" type="text/css" href="svg.css"> -->
 	<link rel="stylesheet" type="text/css" href="style.css">
 	
@@ -18,7 +18,7 @@
 <body>
 	<header id="header">
 		<a id="site-link" href="index.html" title="Enriques diagram editor">
-			<img id="site-logo" src="siteLogo/cusp.svg" alt="siteLogo/cusp.svg" focusable="false"
+			<img id="site-logo" src="icons/siteLogo/cusp.svg" alt="Site logo" focusable="false"
 			><h1 id="site-span">Enriques diagram editor</h1>
 		</a>
 		<a id="github-link" href="https://github.com/rogolop/Enriques-diagram-editor" title="Enriques diagram editor">
@@ -29,45 +29,45 @@
 	<nav class="toolbar">
 		<button id="downloadButton" onClick="downloadInnerHtml('diagram.svg')" class="toolLabel not-selectable" title="Download SVG">
 			<span style="margin-right: 5px;">SVG</span>
-			<img src = "tools/download.svg" alt="tools/download.svg" draggable="false"/>
+			<img src = "icons/tools/download.svg" alt="Download" draggable="false"/>
 		</button
 		
 		><button id="downloadTikZ" onClick="downloadAsTikZ('diagram.tikz')" class="toolLabel not-selectable" title="Download TikZ">
 			<span style="margin-right: 5px;">TikZ</span>
-			<img src = "tools/download.svg" alt="tools/download.svg" draggable="false"/>
+			<img src = "icons/tools/download.svg" alt="Download" draggable="false"/>
 		</button
 		
 		><div class="vl"></div
 		><input type="radio" name="tool" id="mainTool" value="mainTool"
 		><label for="mainTool" class="toolLabel not-selectable" title="Move, select, edit curves" onClick="checkRadio(this)" onkeyup="checkRadioOnKeyEnterUp(event, this)" tabindex="0">
-			<img src = "tools/main.svg" alt="tools/main.svg" draggable="false"/>
+			<img src = "icons/tools/main.svg" alt="Main tool" draggable="false"/>
 		</label
 		
 		><!-- 
 		><input type="radio" name="tool" id="select" value="select"
 		><label for="select" class="toolLabel not-selectable" title="Select" onClick="checkRadio(this)" onkeyup="checkRadioOnKeyEnterUp(event, this)" tabindex="0">
-			<img src = "tools/select.svg" alt="tools/select.svg" draggable="false"/>
+			<img src = "icons/tools/select.svg" alt="Select tool" draggable="false"/>
 		</label
 		
 		> --><input type="radio" name="tool" id="free" value="free"
 		><label for="free" class="toolLabel not-selectable" title="Add free point" onClick="checkRadio(this)" onkeyup="checkRadioOnKeyEnterUp(event, this)" tabindex="0">
-			<img src = "tools/free.svg" alt="tools/free.svg" draggable="false"/>
+			<img src = "icons/tools/free.svg" alt="Free point tool" draggable="false"/>
 		</label
 		
 		><input type="radio" name="tool" id="satellite" value="satellite"
 		><label for="satellite" class="toolLabel not-selectable" title="Add satellite point" onClick="checkRadio(this)" onkeyup="checkRadioOnKeyEnterUp(event, this)" tabindex="0">
-			<img src = "tools/satellite.svg" alt="tools/satellite.svg" draggable="false"/>
+			<img src = "icons/tools/satellite.svg" alt="Satellite point tool" draggable="false"/>
 		</label
 		
 		><input type="radio" name="tool" id="eraser" value="eraser"
 		><label for="eraser" class="toolLabel not-selectable" title="Erase" onClick="checkRadio(this)" onkeyup="checkRadioOnKeyEnterUp(event, this)" tabindex="0">
-			<img src = "tools/eraser.svg" alt="tools/eraser.svg" draggable="false"/>
+			<img src = "icons/tools/eraser.svg" alt="Eraser tool" draggable="false"/>
 		</label
 		
 		><!-- 
 		<input type="radio" name="tool" id="curveEdit" value="curveEdit"
 		><label for="curveEdit" class="toolLabel not-selectable" title="Edit curves" onClick="checkRadio(this)" onkeyup="checkRadioOnKeyEnterUp(event, this)" tabindex="0">
-			<img src = "tools/curveEdit.svg" alt="tools/curveEdit.svg" draggable="false"/>
+			<img src = "icons/tools/curveEdit.svg" alt="Curve edit tool" draggable="false"/>
 		</label
 		
 		>--><div class="vl"></div

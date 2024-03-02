@@ -374,7 +374,8 @@ svg {
 	/* outline: 1pt dashed #00000030; */
 }
 
-.point.highlight {
+.point.highlight,
+.label.highlight {
 	fill: var(--svg-deletePoint-color) !important;
 }
 
@@ -395,7 +396,24 @@ svg {
 	stroke-width: 3;
 }
 
+@font-face {
+    font-family: "Computer Modern Unicode";
+    src: url(fonts/cm-unicode-0.7.0/cmunrm.ttf);
+}
 
+.label {
+	user-select: none;
+	font-family: "Computer Modern Unicode", Times, serif;
+	/* pointer-events: all; */
+}
 
+.label:hover {
+	/* fill: green; */
+	text-decoration: underline;
+}
+
+.label.selected {
+	fill: var(--svg-selected-color);
+}
 
 

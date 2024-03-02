@@ -30,7 +30,8 @@ const ObjectTypes = {
 	BasePoint: "BasePoint",
 	LastSatellitePoint: "LastSatellitePoint",
 	LastFreePoint: "LastFreePoint",
-	IntermediatePoint: "IntermediatePoint"
+	IntermediatePoint: "IntermediatePoint",
+	Label: "Label"
 };
 
 const enriquesPointTypes = [
@@ -52,6 +53,10 @@ const movablePointTypes = [
 	ObjectTypes.LastFreePoint
 ];
 
+const movableTypes = movablePointTypes.concat([
+	ObjectTypes.Label
+]);
+
 const deletablePointTypes = [
 	ObjectTypes.LastSatellitePoint,
 	ObjectTypes.LastFreePoint
@@ -69,7 +74,7 @@ const unconstrainedPointTypes = [
 
 // Global state
 var initGlobalState = {
-	tool: Tool.Free,
+	tool: Tool.Main,
 	mySVGs: []
 };
 var GlobalState = initGlobalState;
@@ -192,7 +197,7 @@ $(function() {
 	// Initialize radio buttons "tool"
 	$('input[type=radio][name=tool]').val([initGlobalState.tool]);
 	
-	// Function called when radio buttons "tool" change value
+	// Change tool (when the radio buttons "tool" change value)
 	$('input[type=radio][name=tool]').change(function() {
 		if (Tools.includes(this.value)) {
 			GlobalState.tool = this.value;
@@ -207,6 +212,7 @@ $(function() {
 		}
 	});
 	
+	// Change SVG size (when the number input fields "svgSize" change value)
 	$('input[type=number][name=svgSize]').change(function() {
 		let viewBox = activeSVG.getAttribute("viewBox").split(" ");
 		if (this.id == "svgWidth") {
@@ -215,6 +221,21 @@ $(function() {
 			activeSVG.setAttribute("viewBox", viewBox[0] + " " + viewBox[1] + " " + viewBox[2] + " " + this.value);
 		}
 	});
+	
+	// Handle keypresses
+	document.onkeydown = function(evt) {
+		switch (evt.key) {
+			case "Escape":
+				// Change to main tool
+				$toolButtons = $('input[type=radio][name=tool]');
+				$toolButtons.val([Tool.Main]);
+				$toolButtons[0].dispatchEvent(new Event('change')); // manually trigger the change event (as if it were user input)
+				active_mySVG.highlightCancel();
+				break;
+			default:
+				break;
+		}
+	}
 });
 
 function checkRadioOnKeyEnterUp(evt, label){
@@ -662,6 +683,54 @@ class LastFreePoint extends Point {
 	}
 }
 
+class Label extends myElement {
+	static instanceNumber = 0;
+	static newID() {
+		let n = Label.instanceNumber;
+		Label.instanceNumber++;
+		return n;
+	}
+	
+	static new(_elements, _svg, _pos, _content) {
+		let pt = new Label(_svg, _pos, _content);
+		_elements[pt.id] = pt;
+		return pt;
+	}
+	
+	constructor(_svg, _pos, _content) {
+		super(_svg, "label"+Label.newID(), _pos);
+		this.content = _content;
+		this.element = this.createLabel(_pos, _content, true);
+		// this.element.addEventListener('mouseenter', function(){this.element.classList.add("hovering");}.bind(this));
+		// this.element.addEventListener('mouseleave', function(){this.element.classList.remove("hovering");}.bind(this));
+		this.type = ObjectTypes.Label;
+	}
+	
+	createLabel(pos, content, draggable) {
+		let element = document.createElementNS(xmlns, 'text');
+		element.setAttributeNS(null, 'id', this.id);
+		element.setAttributeNS(null, 'x', pos.x);
+		element.setAttributeNS(null, 'y', pos.y);
+		element.textContent = content;
+		if (draggable) {
+			element.setAttributeNS(null, 'class', 'label draggable');
+		} else {
+			element.setAttributeNS(null, 'class', 'label');
+		}
+		element = this.svg.appendChild(element);
+		return element;
+	}
+	
+	moveTo(x, y) {
+		this.element.setAttributeNS(null, 'x', x);
+		this.element.setAttributeNS(null, 'y', y);
+		this.pos.x = x;
+		this.pos.y = y;
+	}
+	
+	getDrawableData() {return {type:"text", pos:this.pos, content:this.content};}
+}
+
 class mySVG {
 	static instanceNumber = 0;
 	static newID() {
@@ -704,6 +773,7 @@ class mySVG {
 		this.elements = {}; // id -> myElement
 		this.points = []; // ids
 		this.lines = []; // ids
+		this.labels = []; // ids
 		
 		// -- event variables
 		this.mousePos = {x:0, y:0}; // pos
@@ -731,6 +801,7 @@ class mySVG {
 		// -- create SVG grouping elements
 		this.lineGroup = $(document.createElementNS(xmlns, 'g')).appendTo(this.$svg).attr({id: 'lineGroup'})[0];
 		this.pointGroup = $(document.createElementNS(xmlns, 'g')).appendTo(this.$svg).attr({id: 'pointGroup'})[0];
+		this.labelGroup = $(document.createElementNS(xmlns, 'g')).appendTo(this.$svg).attr({id: 'labelGroup'})[0];
 		this.guiGroup = $(document.createElementNS(xmlns, 'g')).appendTo(this.$svg).attr({id: 'guiGroup'})[0];
 		
 		// -- create tool gui svg elements
@@ -747,13 +818,13 @@ class mySVG {
 		this.createShadowPointGui();
 		
 		// -- create Enriques base point
-		let pt = BasePoint.new(this.elements, this.pointGroup, {x:20, y:70}, 6);
+		let pt = BasePoint.new(this.elements, this.pointGroup, {x:20, y:80}, 6);
 		this.basePoint = pt.id; // id
 		this.points.push(pt.id);
 		this.selectElement(this.basePoint);
 		
 		// -- create example diagram
-		// this.createExampleDiagram();
+		this.createExampleDiagram();
 		
 		this.hideToolGUI();
 		
@@ -835,9 +906,6 @@ class mySVG {
 		this.dy = this.mousePos.y - this.lastMousePos.y;
 		this.targetId = evt.target.id;
 		this.targetElement = this.elements[this.targetId];
-		
-		// console.log(this.dx, this.dy, this.targetId);
-		// console.log(GlobalState.tool);
 		
 		// -- act depending on tool
 		switch (GlobalState.tool) {
@@ -956,7 +1024,7 @@ class mySVG {
 					this.unselectAll();
 					this.startCurveEdit(this.targetId);
 					
-				} else if (movablePointTypes.includes(this.targetElement.type)) {
+				} else if (movableTypes.includes(this.targetElement.type)) {
 					if (this.selected.length <= 1 || !this.selected.includes(this.targetId)) {
 						this.unselectAll();
 						this.selectElement(this.targetId);
@@ -1051,7 +1119,7 @@ class mySVG {
 			if (this.selectingRectangle) {
 				this.stopSelectionInRectangle();
 			} else if (!this.movingAnElement) {
-				if (this.targetElement && movablePointTypes.includes(this.targetElement.type)) {
+				if (this.targetElement && movableTypes.includes(this.targetElement.type)) {
 					this.toggleSelectElement(this.targetId);
 				}
 			}
@@ -1072,7 +1140,7 @@ class mySVG {
 				this.unselectAll();
 				this.startSelectionInRectangle();
 
-			} else if (this.targetElement && movablePointTypes.includes(this.targetElement.type)) {
+			} else if (this.targetElement && movableTypes.includes(this.targetElement.type)) {
 				// >> click on movable point
 				this.toggleSelectElement(this.targetId);
 			}
@@ -1302,19 +1370,32 @@ class mySVG {
 		let topSelected = [];
 		if (this.selected.includes(this.basePoint)) {
 			topSelected = [this.basePoint];
+			for (const id of this.selected) {
+				const element = this.elements[id];
+				if (element.type == ObjectTypes.Label) {
+					// label can me moved immediately
+					element.moveBy(dx, dy);
+				}
+			}
 		} else {
 			for (const id of this.selected) {
 				const element = this.elements[id];
-				let ancestor = this.elements[element.base];
-				while (true) {
-					if (this.selected.includes(ancestor.id)) {
-						break;
+				if (element.type == ObjectTypes.Label) {
+					// label can me moved immediately
+					element.moveBy(dx, dy);
+				} else {
+					// points may have ancestors
+					let ancestor = this.elements[element.base];
+					while (true) {
+						if (this.selected.includes(ancestor.id)) {
+							break;
+						}
+						if (ancestor.id == this.basePoint) {
+							topSelected.push(id);
+							break;
+						}
+						ancestor = this.elements[ancestor.base];
 					}
-					if (ancestor.id == this.basePoint) {
-						topSelected.push(id);
-						break;
-					}
-					ancestor = this.elements[ancestor.base];
 				}
 			}
 		}
@@ -1500,6 +1581,14 @@ class mySVG {
 			if (this.targetElement && deletablePointTypes.includes(this.targetElement.type)) {
 				// evt.target.classList.contains('draggable')
 				this.erasePointAndDescendants(this.targetElement);
+			}  else if (this.targetElement.type == ObjectTypes.Label) {
+				this.descendants = [];
+				this.unselectAll();
+				// -- remove from SVG
+				this.targetElement.element.remove();
+				// -- remove from mySVG
+				this.labels = this.labels.filter(elt => elt !== this.targetId);
+				delete this.elements[this.targetId];
 			} else {
 				this.unselectAll();
 			}
@@ -1557,29 +1646,48 @@ class mySVG {
 		}
 		this.descendants = [];
 		
-		if (element && deletablePointTypes.includes(element.type)) {
-			// -- highlight descendants of element and itself
-			// element.element.classList.add("highlight");
-			// this.descendants.push(element.id);
-			// let queue = element.children.concat([]); // .concat([]) to do a shallow copy instead of assigning references
-			let queue = [element.id];
-			if (element.type == ObjectTypes.BasePoint) {
-				queue = element.children.concat([]); // .concat([]) to do a shallow copy instead of assigning references
-			}
-			while (queue.length > 0) {
-				let descendant = this.elements[queue.shift()];
-				// -- add highlighted point to this.descendants
-				this.descendants.push(descendant.id);
-				// -- add children of descendant to queue
-				queue = queue.concat(descendant.children);
-				// -- highlight point and line
-				descendant.element.classList.add("highlight");
-				if (lastPointTypes.includes(descendant.type)) {
-					let line = this.elements[descendant.curve];
-					line.element.classList.add("highlight");
+		if (element) {
+			if (deletablePointTypes.includes(element.type)) {
+				// -- highlight descendants of element and itself
+				// element.element.classList.add("highlight");
+				// this.descendants.push(element.id);
+				// let queue = element.children.concat([]); // .concat([]) to do a shallow copy instead of assigning references
+				let queue = [element.id];
+				if (element.type == ObjectTypes.BasePoint) {
+					queue = element.children.concat([]); // .concat([]) to do a shallow copy instead of assigning references
 				}
+				while (queue.length > 0) {
+					let descendant = this.elements[queue.shift()];
+					// -- add highlighted point to this.descendants
+					this.descendants.push(descendant.id);
+					// -- add children of descendant to queue
+					queue = queue.concat(descendant.children);
+					// -- highlight point and line
+					descendant.element.classList.add("highlight");
+					if (lastPointTypes.includes(descendant.type)) {
+						let line = this.elements[descendant.curve];
+						line.element.classList.add("highlight");
+					}
+				}
+			} else if (element.type == ObjectTypes.Label) {
+				element.element.classList.add("highlight");
+				this.descendants = [element.id];
 			}
 		}
+	}
+	
+	highlightCancel() {
+		// -- remove highlights, clear this.descendants
+		for (const id of this.descendants) {
+			let descendant = this.elements[id];
+			descendant.element.classList.remove("highlight");
+			// -- remove highlight from incoming line
+			if (lastPointTypes.includes(descendant.type)) {
+				let line = this.elements[descendant.curve];
+				line.element.classList.remove("highlight");
+			}
+		}
+		this.descendants = [];
 	}
 	
 	// -- select
@@ -1643,8 +1751,7 @@ class mySVG {
 		let pos;
 		for (const [id, element] of Object.entries(this.elements)) {
 			pos = element.position;
-			if (
-				movablePointTypes.includes(element.type) &&
+			if (movableTypes.includes(element.type) &&
 				minPos.x < pos.x &&
 				pos.x < maxPos.x &&
 				minPos.y < pos.y &&
@@ -1984,6 +2091,12 @@ class mySVG {
 		return pt;
 	}
 	
+	createLabel(pos, content) {
+		let label = Label.new(this.elements, this.labelGroup, pos, content);
+		this.labels.push(label.id);
+		return label;
+	}
+	
 	projectPosOnNormal(parentId, pos) {
 		let parent = this.elements[parentId];
 		let tangent = this.elements[parent.curve].getTangentAt(1);
@@ -2008,23 +2121,20 @@ class mySVG {
 	}
 	
 	createExampleDiagram() {
-		let pt = this.createSatellitePoint(this.basePoint, {x: 20, y: 50});
-		let pt4 = this.createSatellitePoint(pt.id, {x: 40, y: 80});
-		pt4 = this.createSatellitePoint(pt4.id, {x: 60, y: 90});
-		pt4 = this.createSatellitePoint(pt4.id, {x: 130, y: 90});
-		pt4 = this.createSatellitePoint(pt4.id, {x: 140, y: 70});
-		pt = this.createSatellitePoint(pt.id, {x: 35, y: 30});
-		pt = this.createSatellitePoint(pt.id, {x: 50, y: 20});
-		pt = this.createSatellitePoint(pt.id, {x: 70, y: 20});
-		this.createSatellitePoint(pt.id, {x: 70, y: 40});
-		pt = this.createSatellitePoint(pt.id, {x: 90, y: 20});
-		this.createSatellitePoint(pt.id, {x: 100, y: 10});
-		let pt2 = this.createSatellitePoint(pt.id, {x: 90, y: 40});
-		let pt3 = this.createSatellitePoint(pt2.id, {x: 90, y: 60});
-		this.createSatellitePoint(pt2.id, {x: 110, y: 60});
-		this.createSatellitePoint(pt2.id, {x: 110, y: 40});
-		pt = this.createSatellitePoint(pt.id, {x: 110, y: 20});
-		pt = this.createSatellitePoint(pt.id, {x: 130, y: 20});
+		let pt = this.createFreePoint(this.basePoint, {x: 34, y: 43});
+		pt = this.createFreePoint(pt.id, {x: 60, y: 22});
+		let pt4 = this.createFreePoint(pt.id, {x: 98, y: 13});
+		let pt5 = this.createSatellitePoint(pt4.id, {x: 97, y: 38});
+		pt5 = this.createSatellitePoint(pt5.id, {x: 128, y: 40});
+		pt = this.createFreePoint(pt5.id, {x: 160, y: 15});
+		pt = this.createFreePoint(pt5.id, {x: 173, y: 31});
+		
+		pt = this.createSatellitePoint(pt4.id, {x: 98, y: 65});
+		pt = this.createFreePoint(pt.id, {x: 127, y: 86});
+		pt = this.createSatellitePoint(pt.id, {x: 130, y: 61});
+		pt = this.createSatellitePoint(pt.id, {x: 157, y: 64});
+		
+		this.createLabel({x:30, y:70}, "Hello");
 	}
 	
 	hideToolGUI() {
@@ -2055,7 +2165,6 @@ class mySVG {
 			const element = this.elements[id];
 			shapes.push(element.getDrawableData());
 		}
-		console.log(shapes);
 		return shapes;
 	}
 }
