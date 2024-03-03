@@ -442,7 +442,7 @@ body,
   /* border: none; */
   /* color: green; */
   color: var(--svg-selected-color);
-  /* background-color: transparent; */
+  background-color: transparent;
   min-width: 0;
   box-sizing: border-box; max-width: none; width: 100%;
 }

@@ -75,7 +75,7 @@ const unconstrainedPointTypes = [
 
 // Global state
 var initGlobalState = {
-	tool: Tool.Labeller,
+	tool: Tool.Main,
 	mySVGs: []
 };
 var GlobalState = initGlobalState;
