@@ -409,11 +409,56 @@ svg {
 
 .label:hover {
 	/* fill: green; */
-	text-decoration: underline;
+	/* text-decoration: underline; */
+	/* cursor: text; */
+	stroke: var(--svg-transparent-dark-color);
+	stroke-width: 2pt;
+	/* fill: none; */
+	/* fill: var(--svg-selected-color); */
 }
 
 .label.selected {
 	fill: var(--svg-selected-color);
 }
 
+svg input {
+	border:0;
+	outline:0;
+}
+svg input:focus {
+	outline:none!important;
+}
+
+body,
+#labelInput,
+#labelHiddenSpan {
+  font: inherit;
+  margin: 0;
+  padding: 0;
+  font-family: "Computer Modern Unicode", Times, serif;
+}
+
+#labelInput {
+  /* border: none; */
+  /* color: green; */
+  color: var(--svg-selected-color);
+  /* background-color: transparent; */
+  min-width: 0;
+  box-sizing: border-box; max-width: none; width: 100%;
+}
+
+#labelInput:focus-visible {
+  outline: none;
+}
+
+#labelHiddenSpan {
+  display: none;
+  white-space: pre;
+}
+
+.hidden-label {
+	/* background-color: transparent; */
+	/* color: transparent; */
+	opacity: 0;
+}
 

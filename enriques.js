@@ -11,7 +11,8 @@ const Tool = {
 	Select: "select",
 	Free: "free",
 	Satellite: "satellite",
-	CurveEdit: "curveEdit"
+	CurveEdit: "curveEdit",
+	Labeller: "labeller"
 };
 const Tools = Object.keys(Tool).map(function(key){return Tool[key];});
 
@@ -74,7 +75,7 @@ const unconstrainedPointTypes = [
 
 // Global state
 var initGlobalState = {
-	tool: Tool.Main,
+	tool: Tool.Labeller,
 	mySVGs: []
 };
 var GlobalState = initGlobalState;
@@ -197,20 +198,27 @@ $(function() {
 	// Initialize radio buttons "tool"
 	$('input[type=radio][name=tool]').val([initGlobalState.tool]);
 	
-	// Change tool (when the radio buttons "tool" change value)
-	$('input[type=radio][name=tool]').change(function() {
-		if (Tools.includes(this.value)) {
-			GlobalState.tool = this.value;
+	// WHY DOES THIS NOT WORK????????????????????????????????????
+	// INSTEAD USING checkRadioOnKeyEnterUp, checkRadio BELOW
+	//
+	// // Change tool (when the radio buttons "tool" change value)
+	// $('input[type=number][name=tool]').change(function() {
+	// 	console.error("tool change");
+	// 	eval("1--");
+	// 	if (Tools.includes(this.value)) {
+	// 		active_mySVG.stopLabelEdit();
+	// 		active_mySVG.hideToolGUI();
+	// 		active_mySVG.highlightCancel();
 			
-			active_mySVG.hideToolGUI();
-			
-			// -- add active tool to svg as class
-			for (const tool of Tools) {
-				activeSVG.classList.remove(tool);
-			}
-			activeSVG.classList.add(this.value);
-		}
-	});
+	// 		GlobalState.tool = this.value;
+
+	// 		// -- add active tool to svg as class
+	// 		for (const tool of Tools) {
+	// 			activeSVG.classList.remove(tool);
+	// 		}
+	// 		activeSVG.classList.add(this.value);
+	// 	}
+	// });
 	
 	// Change SVG size (when the number input fields "svgSize" change value)
 	$('input[type=number][name=svgSize]').change(function() {
@@ -226,11 +234,17 @@ $(function() {
 	document.onkeydown = function(evt) {
 		switch (evt.key) {
 			case "Escape":
-				// Change to main tool
-				$toolButtons = $('input[type=radio][name=tool]');
-				$toolButtons.val([Tool.Main]);
-				$toolButtons[0].dispatchEvent(new Event('change')); // manually trigger the change event (as if it were user input)
-				active_mySVG.highlightCancel();
+				if (active_mySVG.editingLabel) {
+					active_mySVG.stopLabelEdit();
+				} else {
+					// Change to main tool
+					let $toolButtons = $('input[type=radio][name=tool]');
+					$toolButtons.val([Tool.Main]);
+					$toolButtons[0].dispatchEvent(new Event('change')); // manually trigger the change event (as if it were user input)
+				}
+				break;
+			case "Enter":
+				active_mySVG.stopLabelEdit();
 				break;
 			default:
 				break;
@@ -250,6 +264,8 @@ function checkRadio(label) {
 		GlobalState.tool = input.value;
 		
 		active_mySVG.hideToolGUI();
+		active_mySVG.stopLabelEdit();
+		active_mySVG.highlightCancel();
 		
 		// -- add active tool to svg as class
 		for (const tool of Tools) {
@@ -306,13 +322,9 @@ class myElement {
 		this.pos = _pos;
 	}
 	
-	get position() {
-		return {...this.pos};
-	}
+	get position() { return {...this.pos}; } // deep copy of object
 	
-	set position(_pos) {
-		this.moveTo(_pos.x, _pos.y);
-	}
+	set position(_pos) { this.moveTo(_pos.x, _pos.y); }
 	
 	moveBy(dx, dy) {
 		this.moveTo(this.pos.x+dx, this.pos.y+dy);
@@ -398,9 +410,9 @@ class Line extends myElement {
 		this.type = ObjectTypes.Line;
 	}
 	
-	get position1() { return {...this.pos1}; }
+	get position1() { return {...this.pos1}; } // deep copy of object
 	
-	get position2() { return {...this.pos2};	}
+	get position2() { return {...this.pos2}; } // deep copy of object
 	
 	set position1(_pos1) {
 		this.pos1 = {..._pos1};
@@ -489,13 +501,13 @@ class Curve extends myElement {
 		this.type = ObjectTypes.Curve;
 	}
 	
-	get position1() { return {...this.pos1}; }
+	get position1() { return {...this.pos1}; } // deep copy of object
 	
-	get position2() { return {...this.pos2};	}
+	get position2() { return {...this.pos2}; } // deep copy of object
 
-	get positionC1() { return {...this.posC1}; }
+	get positionC1() { return {...this.posC1}; } // deep copy of object
 	
-	get positionC2() { return {...this.posC2}; }
+	get positionC2() { return {...this.posC2}; } // deep copy of object
 	
 	set position1(_pos1) {
 		this.pos1 = {..._pos1};
@@ -699,11 +711,18 @@ class Label extends myElement {
 	
 	constructor(_svg, _pos, _content) {
 		super(_svg, "label"+Label.newID(), _pos);
-		this.content = _content;
+		this.contentStr = _content;
 		this.element = this.createLabel(_pos, _content, true);
 		// this.element.addEventListener('mouseenter', function(){this.element.classList.add("hovering");}.bind(this));
 		// this.element.addEventListener('mouseleave', function(){this.element.classList.remove("hovering");}.bind(this));
 		this.type = ObjectTypes.Label;
+	}
+	
+	get content() { return this.contentStr.split('').join(''); } // deep copy of string
+	
+	set content(_content) {
+		this.contentStr = _content.split('').join('');// deep copy of string
+		this.element.textContent = this.contentStr;
 	}
 	
 	createLabel(pos, content, draggable) {
@@ -766,6 +785,7 @@ class mySVG {
 		}
 		activeSVG = this.svg;
 		activeSVG.classList.add("activeSVG");
+		activeSVG.classList.add(GlobalState.tool);
 		active_mySVG = this;
 		GlobalState.mySVGs.push(this);
 		
@@ -794,6 +814,7 @@ class mySVG {
 		this.editingControl2; // bool
 		this.editingElement1; // curve id
 		this.editingElement2; // curve id
+		this.editingLabel = false;
 		
 		// -- create background
 		this.$background = this.createBackground();
@@ -840,9 +861,9 @@ class mySVG {
 		this.svg.addEventListener('mousemove', this.doOnDrag.bind(this));
 		this.svg.addEventListener('mouseup',  this.doOnEndDrag.bind(this));
 		this.svg.addEventListener('mouseleave', this.doOnEndDrag.bind(this));
-		
 		this.svg.addEventListener('mouseover', this.doOnMouseOver.bind(this));
 		// this.svg.addEventListener('mouseout', this.doOnMouseOver.bind(this));
+		this.svg.addEventListener('dblclick', this.doOnDoubleClick.bind(this));
 		
 		// touch events
 		this.svg.addEventListener('touchstart', this.doOnClick.bind(this));
@@ -857,6 +878,7 @@ class mySVG {
 	// -- handle click, drag, end drag
 	
 	doOnClick(evt) {
+		// console.log("Click");
 		if (evt.changedTouches) {
 			evt = evt.changedTouches[0];
 			this.mouseButtons = MouseButton.Left;
@@ -892,12 +914,16 @@ class mySVG {
 			case Tool.CurveEdit:
 				this.curveEditClick(evt);
 				break;
+			case Tool.Labeller:
+				this.labellerClick(evt);
+				break;
 			default:
 				break;
 		}
 	}
 	
 	doOnDrag(evt) {
+		// console.log("Drag");
 		evt.preventDefault();
 		if (evt.changedTouches) { evt = evt.changedTouches[0]; }
 		this.mousePos = this.getMousePosition(evt);
@@ -927,6 +953,9 @@ class mySVG {
 			case Tool.CurveEdit:
 				this.curveEditDrag(evt);
 				break;
+			case Tool.Labeller:
+				this.labellerDrag(evt);
+				break;
 			default:
 				break;
 		}
@@ -935,6 +964,7 @@ class mySVG {
 	}
 	
 	doOnEndDrag(evt) {
+		// console.log("EndDrag");
 		if (evt.changedTouches) { evt = evt.changedTouches[0]; }
 		this.mousePos = this.getMousePosition(evt);
 
@@ -961,6 +991,9 @@ class mySVG {
 			case Tool.CurveEdit:
 				this.curveEditEndDrag(evt);
 				break;
+			case Tool.Labeller:
+				this.labellerEndDrag(evt);
+				break;
 			default:
 				break;
 		}
@@ -969,6 +1002,7 @@ class mySVG {
 	}
 	
 	doOnMouseOver(evt) {
+		// console.log("MouseOver");
 		if (this.mouseButtons == 0) {
 			this.mousePos = this.getMousePosition(evt);
 			this.targetId = evt.target.id;
@@ -995,10 +1029,66 @@ class mySVG {
 				case Tool.CurveEdit:
 					this.curveEditMouseOver(evt);
 					break;
+				case Tool.Labeller:
+					this.labellerMouseOver(evt);
+					break;
 				default:
 					break;
 			}
 		}
+	}
+	
+	doOnDoubleClick(evt) {
+		// console.log("DoubleClick");
+		// console.log(evt);
+
+		if (evt.changedTouches) {
+			evt = evt.changedTouches[0];
+			// this.mouseButtons = MouseButton.Left;
+		} else {
+			// this.mouseButtons = evt.buttons;
+		}
+		this.mouseButtons = MouseButton.Left; // The dblclick event fires when a pointing device button (such as a mouse's primary button) is double-clicked
+		
+		this.mousePos = this.getMousePosition(evt);
+
+		// this.lastMousePos = this.mousePos;
+		
+		// this.dragStartMousePos = this.mousePos;
+		this.targetId = evt.target.id;
+		this.targetElement = this.elements[this.targetId];
+		// this.mouseButtons = evt.buttons;
+		
+		
+		
+		// -- act depending on tool
+		switch (GlobalState.tool) {
+			case Tool.Main:
+				this.mainToolDoubleClick(evt);
+				break;
+			case Tool.Eraser:
+				this.eraserDoubleClick(evt);
+				break;
+			case Tool.Select:
+				this.selectDoubleClick(evt);
+				break;
+			case Tool.Free:
+				this.freeDoubleClick(evt);
+				break;
+			case Tool.Satellite:
+				this.satelliteDoubleClick(evt);
+				break;
+			case Tool.CurveEdit:
+				this.curveEditDoubleClick(evt);
+				break;
+			case Tool.Labeller:
+				this.labellerDoubleClick(evt);
+				break;
+			default:
+				break;
+		}
+		
+		this.mouseButtons = 0;
 	}
 	
 	// -- main tool
@@ -1101,10 +1191,9 @@ class mySVG {
 	}
 	
 	mainToolEndDrag(evt) {
+		this.movingAnElement = false;
 		if (this.mouseButtons & MouseButton.Left) {
-			if (this.movingAnElement) {
-				this.movingAnElement = false;
-			} else if (this.selectingRectangle) {
+			if (this.selectingRectangle) {
 				this.stopSelectionInRectangle();
 			}
 			// else {
@@ -1131,10 +1220,12 @@ class mySVG {
 	
 	mainToolMouseOver(evt) {}
 	
+	mainToolDoubleClick(evt) {}
+	
 	// -- select
 	
 	selectClick(evt) {
-		if (this.mouseButtons & (MouseButton.Left | MouseButton.Right)) {
+		if (this.mouseButtons && (MouseButton.Left || MouseButton.Right)) {
 			if (this.targetId == 'background') {
 				// >> click on background
 				this.unselectAll();
@@ -1148,7 +1239,7 @@ class mySVG {
 	}
 	
 	selectDrag(evt) {
-		if (this.mouseButtons & (MouseButton.Left | MouseButton.Right)) {
+		if (this.mouseButtons && (MouseButton.Left || MouseButton.Right)) {
 			if (this.selectingRectangle) {
 				this.multipleSelectInRectangle();
 			}
@@ -1161,6 +1252,8 @@ class mySVG {
 	
 	selectMouseOver(evt) {}
 	
+	selectDoubleClick(evt) {}
+	
 	// -- eraser
 	
 	eraserClick = this.erase;
@@ -1170,6 +1263,8 @@ class mySVG {
 	eraserEndDrag(evt) { this.unselectAll(); }
 	
 	eraserMouseOver(evt) { this.highlightDescendants(this.targetElement); }
+	
+	eraserDoubleClick(evt) {}
 	
 	// -- free
 	
@@ -1218,9 +1313,7 @@ class mySVG {
 	}
 	
 	freeEndDrag(evt) {
-		if (this.movingAnElement) {
-			this.movingAnElement = false;
-		}
+		this.movingAnElement = false;
 	}
 	
 	freeMouseOver(evt) {
@@ -1239,6 +1332,8 @@ class mySVG {
 			// this.shadowLine.element.setAttributeNS(null, "visibility", "hidden");
 		}
 	}
+	
+	freeDoubleClick(evt) {}
 	
 	// -- satellite
 	
@@ -1291,9 +1386,7 @@ class mySVG {
 	}
 	
 	satelliteEndDrag(evt) {
-		if (this.movingAnElement) {
-			this.movingAnElement = false;
-		}
+		this.movingAnElement = false;
 	}
 	
 	satelliteMouseOver(evt) {
@@ -1306,6 +1399,8 @@ class mySVG {
 			this.shadowLine.element.setAttributeNS(null, "visibility", "hidden");
 		}
 	}
+	
+	satelliteDoubleClick(evt) {}
 	
 	// -- curveEdit
 	
@@ -1360,6 +1455,63 @@ class mySVG {
 	}
 	
 	curveEditMouseOver(evt) {}
+	
+	curveEditDoubleClick(evt) {}
+	
+	// -- labeller
+	
+	labellerClick(evt) {
+		if (this.editingLabel) {
+			if (this.targetId == "labelInput") {
+				
+			} else {
+				this.stopLabelEdit();
+			}
+		} else {
+			this.unselectAll();
+			if (this.mouseButtons & MouseButton.Left) {
+				if (this.targetId == 'background') {
+					let label = this.createLabel({x: this.mousePos.x - 4, y: this.mousePos.y + 5}, "W");
+					this.selectElement(label.id);
+					// $(label.id).ready(function(){ 
+						this.startLabelEdit(label.id, false);
+					//  }.bind(this));
+					
+				} else if (this.targetElement && (this.targetElement.type == ObjectTypes.Label)) {
+					this.selectElement(this.targetId);
+				}
+			}
+		}
+	}
+	
+	labellerDrag(evt) {
+		if (!this.editingLabel) {
+			if (this.mouseButtons & MouseButton.Left) {
+				this.movingAnElement = true;
+				this.moveSelectedBy(this.dx, this.dy);
+			}
+		}
+	}
+	
+	labellerEndDrag(evt) {
+		if (this.movingAnElement) {
+			this.unselectAll();
+			this.movingAnElement = false;
+		}
+	}
+	
+	labellerMouseOver(evt) {}
+	
+	labellerDoubleClick(evt) {
+		// console.log("labellerDoubleClick");
+		// console.log(this.targetId);
+		// console.log(this.targetElement);
+		
+		// this.unselectAll();
+		if ((!this.editingLabel) && (this.targetElement.type == ObjectTypes.Label)) {
+			this.startLabelEdit(this.targetId);
+		}
+	}
 	
 	// ---- FUNCTIONS
 	
@@ -1582,17 +1734,21 @@ class mySVG {
 				// evt.target.classList.contains('draggable')
 				this.erasePointAndDescendants(this.targetElement);
 			}  else if (this.targetElement.type == ObjectTypes.Label) {
-				this.descendants = [];
-				this.unselectAll();
-				// -- remove from SVG
-				this.targetElement.element.remove();
-				// -- remove from mySVG
-				this.labels = this.labels.filter(elt => elt !== this.targetId);
-				delete this.elements[this.targetId];
+				this.eraseLabel(this.targetElement);
 			} else {
 				this.unselectAll();
 			}
 		}
+	}
+	
+	eraseLabel(element) {
+		this.descendants = [];
+		this.unselectAll();
+		// -- remove from SVG
+		element.element.remove();
+		// -- remove from mySVG
+		this.labels = this.labels.filter(elt => elt !== element.id);
+		delete this.elements[element.id];
 	}
 	
 	erasePointAndDescendants(element) {
@@ -1925,6 +2081,96 @@ class mySVG {
 		}
 	}
 	
+	// -- edit label content
+	
+	startLabelEdit(id, keepLabelValue=true) {
+		console.log("startLabelEdit");
+		
+		this.unselectAll();
+		this.selectElement(id);
+		this.editingLabel = true;
+		const label = this.elements[id];
+		label.element.classList.add("hidden-label");
+		
+		var boundingBox = label.element.getBBox();
+		console.log('XxY', boundingBox.x + 'x' + boundingBox.y);
+		console.log('size', boundingBox.width + 'x' + boundingBox.height);
+		
+		// <foreignObject> to contain <input> (and <span>)
+		let foreigner = document.createElementNS(xmlns, "foreignObject");
+		foreigner.setAttribute("id", "foreigner");
+		foreigner.setAttributeNS(null, "x", boundingBox.x);
+		foreigner.setAttributeNS(null, "y", boundingBox.y-1);
+		foreigner.setAttributeNS(null, "width", boundingBox.width);
+		foreigner.setAttributeNS(null, "height", boundingBox.height);
+		foreigner.setAttributeNS(null, "overflow", "visible");
+		// foreigner.setAttributeNS(null, "display", "flex");
+		// foreigner.setAttributeNS(null, "flex-wrap", "wrap");
+		// console.log(foreigner);
+		this.guiGroup.appendChild(foreigner);
+		
+		// hidden <span> to measure length of <input> text
+		let span = document.createElement('span');
+		span.setAttribute("id", "labelHiddenSpan");
+		foreigner.appendChild(span);
+		
+		console.log("HERE");
+		console.log(label);
+		console.log(label.content);
+		
+		// <input>
+		let labelInput = document.createElement('input');
+		labelInput.setAttribute("id", "labelInput");
+		labelInput.setAttribute("type", "text");
+		if (keepLabelValue) {
+			labelInput.setAttribute("value", label.content);
+		} else {
+			labelInput.setAttribute("value", "");
+		}
+		labelInput.setAttribute("size", "1");
+		// labelInput.setAttributeNS(null, "resize", "both");
+		// foreigner.setAttributeNS(null, "min-width", "0");
+		// labelInput.setAttribute("style", "box-sizing: border-box; max-width: none; width: 100%;");
+		foreigner.appendChild(labelInput);
+		// labelInput.addEventListener('change', "function(){this.setAttribute().attr('width', $(this).val().length);}" );
+		// labelInput.setAttribute("oninput", "console.log(this);$(this).attr('style', 'box-sizing: border-box; min-width: 1em; width: '+($(this).val().length+1)+'em');");
+		// labelInput.setAttribute('tabindex', '0');
+		// $("#labelInput").ready(function(){ 
+		// 	labelInput.focus();
+		// });
+		setTimeout(function(){ labelInput.focus(); labelInput.selectionStart = labelInput.selectionEnd = 10000; }, 0);
+		// (this.selected.length == 1 && this.elements[this.selected[0]].type == ObjectTypes.Label)
+		
+		$('#labelHiddenSpan').text($('#labelInput').val());
+		$('#labelInput').width($('#labelHiddenSpan').width()+2);
+		$('#labelInput').on('input', function() {
+			$('#labelHiddenSpan').text($('#labelInput').val());
+			$('#labelInput').width($('#labelHiddenSpan').width()+2);
+		});
+		// $(function() {
+		// 	$('#labelHiddenSpan').text($('#labelInput').val());
+		// 	$('#labelInput').width($('#labelHiddenSpan').width());
+		// }).on('input', function() {
+		// 	$('#labelHiddenSpan').text($('#labelInput').val());
+		// 	$('#labelInput').width($('#labelHiddenSpan').width()+2);
+		// });
+	}
+	
+	stopLabelEdit() {
+		console.log("stopLabelEdit");
+		console.log(this.selected);
+		if (this.editingLabel) {
+			const element = this.elements[this.selected[0]];
+			element.element.classList.remove("hidden-label");
+			element.content = $("#labelInput").val();
+			console.log(element.contentStr);
+			if (element.content.length == 0) { this.eraseLabel(element); }
+			$("#foreigner").remove();
+			this.unselectAll();
+			this.editingLabel = false;
+		}
+	}
+	
 	// -- create
 	
 	createBackground() {
@@ -2134,7 +2380,18 @@ class mySVG {
 		pt = this.createSatellitePoint(pt.id, {x: 130, y: 61});
 		pt = this.createSatellitePoint(pt.id, {x: 157, y: 64});
 		
-		this.createLabel({x:30, y:70}, "Hello");
+		this.createLabel({x:28, y:85}, "12");
+		this.createLabel({x:38, y:57}, "12");
+		this.createLabel({x:60, y:38}, "12");
+		this.createLabel({x:102, y:15}, "6");
+		this.createLabel({x:102, y:34}, "4");
+		this.createLabel({x:124, y:30}, "2");
+		this.createLabel({x:165, y:18}, "1");
+		this.createLabel({x:178, y:35}, "1");
+		this.createLabel({x:102, y:70}, "2");
+		this.createLabel({x:132, y:93}, "2");
+		this.createLabel({x:132, y:57}, "1");
+		this.createLabel({x:162, y:70}, "1");
 	}
 	
 	hideToolGUI() {
@@ -2168,5 +2425,6 @@ class mySVG {
 		return shapes;
 	}
 }
+
 
 
