@@ -301,6 +301,7 @@ svg {
 	max-height: max(calc(100vh - 150px),200px);
 	/* width: min(calc(100%), 800px); */
 	box-sizing: border-box;
+	font-size: 9pt;
 }
 
 .activeSVG {

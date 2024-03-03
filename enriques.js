@@ -166,18 +166,25 @@ function downloadAsTikZ(filename) {
 	
 	let drawableShapes = active_mySVG.getDrawableShapes();
 	for (const shape of drawableShapes) {
-		if (shape.type == "circle") {
-			fileContent += `    \\fill[black] (${shape.pos.x}pt,${shape.pos.y}pt) circle [radius=${shape.r}pt];\n`;
-			
-		} else if (shape.type == "line") {
-			fileContent += `    \\draw[line width=1.5] (${shape.pos1.x}pt,${shape.pos1.y}pt) -- (${shape.pos2.x}pt,${shape.pos2.y}pt);\n`;
-			
-		} else if (shape.type == "curve") {
-			fileContent += `    \\draw[line width=1.5] (${shape.pos1.x}pt,${shape.pos1.y}pt) .. controls (${shape.posC1.x}pt,${shape.posC1.y}pt) and (${shape.posC2.x}pt,${shape.posC2.y}pt) .. (${shape.pos2.x}pt,${shape.pos2.y}pt);\n`;
-			
-		} else {
-			console.log(shape);
+		switch (shape.type) {
+			case "circle":
+				fileContent += `    \\fill[black] (${shape.pos.x}pt,${shape.pos.y}pt) circle [radius=${shape.r}pt];\n`;
+				break;
+			case "line":
+				fileContent += `    \\draw[line width=1.5] (${shape.pos1.x}pt,${shape.pos1.y}pt) -- (${shape.pos2.x}pt,${shape.pos2.y}pt);\n`;
+				break;
+			case "curve":
+				fileContent += `    \\draw[line width=1.5] (${shape.pos1.x}pt,${shape.pos1.y}pt) .. controls (${shape.posC1.x}pt,${shape.posC1.y}pt) and (${shape.posC2.x}pt,${shape.posC2.y}pt) .. (${shape.pos2.x}pt,${shape.pos2.y}pt);\n`;
+				break;
+			case "text":
+				fileContent += `    \\node[anchor=south west] at (${shape.pos.x}pt,${shape.pos.y}pt) {${shape.content}};\n`;
+				break;
+			default:
+				console.error("Can't draw this:", shape);
+				break;
 		}
+			// \node[anchor=south west] at (10pt,10pt) {$E_1$};
+		
 	}
 	
 	// Tikz end of file
@@ -2367,6 +2374,7 @@ class mySVG {
 	}
 	
 	createExampleDiagram() {
+		// this.elements[this.basePoint].moveTo(20,80);
 		let pt = this.createFreePoint(this.basePoint, {x: 34, y: 43});
 		pt = this.createFreePoint(pt.id, {x: 60, y: 22});
 		let pt4 = this.createFreePoint(pt.id, {x: 98, y: 13});
@@ -2380,9 +2388,9 @@ class mySVG {
 		pt = this.createSatellitePoint(pt.id, {x: 130, y: 61});
 		pt = this.createSatellitePoint(pt.id, {x: 157, y: 64});
 		
-		this.createLabel({x:28, y:85}, "12");
-		this.createLabel({x:38, y:57}, "12");
-		this.createLabel({x:60, y:38}, "12");
+		this.createLabel({x:2, y:83}, "12");
+		this.createLabel({x:18, y:44}, "12");
+		this.createLabel({x:46, y:19}, "12");
 		this.createLabel({x:102, y:15}, "6");
 		this.createLabel({x:102, y:34}, "4");
 		this.createLabel({x:124, y:30}, "2");
@@ -2392,6 +2400,10 @@ class mySVG {
 		this.createLabel({x:132, y:93}, "2");
 		this.createLabel({x:132, y:57}, "1");
 		this.createLabel({x:162, y:70}, "1");
+		
+		this.createLabel({x:28, y:85}, "$p_0$");
+		this.createLabel({x:38, y:57}, "$p_1$");
+		this.createLabel({x:60, y:38}, "$p_2$");
 	}
 	
 	hideToolGUI() {
@@ -2417,7 +2429,7 @@ class mySVG {
 	// --
 	getDrawableShapes() {
 		let shapes = [];
-		const drawableElement = this.points.concat(this.lines);
+		const drawableElement = this.points.concat(this.lines).concat(this.labels);
 		for (const id of drawableElement) {
 			const element = this.elements[id];
 			shapes.push(element.getDrawableData());
