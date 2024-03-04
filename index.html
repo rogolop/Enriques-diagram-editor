@@ -19,25 +19,30 @@
 	<header id="header">
 		<a id="site-link" href="index.html" title="Enriques diagram editor">
 			<img id="site-logo" src="icons/siteLogo/cusp.svg" alt="Site logo" focusable="false"
-			><h1 id="site-span">Enriques diagram editor</h1>
+			><h1 id="site-title">Enriques diagram editor</h1>
 		</a>
-		<a id="github-link" href="https://github.com/rogolop/Enriques-diagram-editor" title="Enriques diagram editor">
+		<a id="github-link" href="https://github.com/rogolop/Enriques-diagram-editor">
 			<span>GitHub</span>
 		</a>
 	</header>
 	
 	<nav class="toolbar">
-		<button id="downloadButton" onClick="downloadInnerHtml('diagram.svg')" class="toolLabel not-selectable" title="Download SVG">
+		<button id="downloadButton" onClick="downloadInnerHtml('diagram.svg')" class="not-selectable" title="Download SVG">
 			<span style="margin-right: 5px;">SVG</span>
 			<img src = "icons/tools/download.svg" alt="Download" draggable="false"/>
 		</button
 		
-		><button id="downloadTikZ" onClick="downloadAsTikZ('diagram.tikz')" class="toolLabel not-selectable" title="Download TikZ">
+		><button id="downloadTikZ" onClick="downloadAsTikZ('diagram.tikz')" class="not-selectable" title="Download TikZ">
 			<span style="margin-right: 5px;">TikZ</span>
 			<img src = "icons/tools/download.svg" alt="Download" draggable="false"/>
 		</button
 		
-		><div class="vl"></div
+		><button id="clearButton" onClick="clearDiagram()" class="not-selectable" title="Delete diagram">
+			<span>Clear</span>
+			<!-- <img src = "icons/tools/download.svg" alt="Download" draggable="false"/> -->
+		</button
+		
+		><div class="vSeparator"></div
 		><input type="radio" name="tool" id="mainTool" value="mainTool"
 		><label for="mainTool" class="toolLabel not-selectable" title="Move, select, edit curves" onClick="checkRadio(this)" onkeyup="checkRadioOnKeyEnterUp(event, this)" tabindex="0">
 			<img src = "icons/tools/main.svg" alt="Main tool" draggable="false"/>
@@ -75,7 +80,7 @@
 			<img src = "icons/tools/curveEdit.svg" alt="Curve edit tool" draggable="false"/>
 		</label
 		
-		>--><div class="vl"></div
+		>--><div class="vSeparator"></div
 		><table style="display: inline-flex;"  class="not-selectable">
 			<tr>
 				<td><label for="svgWidth">Width</label></td>
@@ -85,13 +90,15 @@
 				<td><label for="svgHeight">Height</label></td>
 				<td><input type="number" name="svgSize" id="svgHeight" value="100" min="50" max="1000" step="10" autocomplete="off"></td>
 			</tr>
-		</table>
+		</table
+		
+		>
 	</nav>
 	
 	<main id="content">
 		<script type="text/javascript">
 			// (function() {
-				var svggg = new mySVG(200, 100, 'content', 'svggg');
+				var svggg = new mySVG(250, 150, 'content', 'svggg');
 				// svggg.svg.setAttribute("height", "250px");
 				// svggg.createExampleDiagram();
 				// var svg1 = new mySVG(200, 100, 'content');
@@ -100,6 +107,6 @@
 				// svg2.svg.setAttribute("height", "250px");
 			// })();
 		</script>
-		<noscript>Sorry, your browser does not support JavaScript!</noscript>
+		<noscript>Enable JavaScript to continue.</noscript>
 	</main>
 </body>

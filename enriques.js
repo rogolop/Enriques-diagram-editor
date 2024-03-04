@@ -152,32 +152,53 @@ function downloadAsTikZ(filename) {
 	
 	// Tikz header
 	var fileContent = `\\begin{tikzpicture}[x=${width}pt,y=${height}pt,yscale=-1,xscale=1,
-    inner sep=0pt,
-    inner ysep=0pt,
-    outer xsep=0pt,
-    outer ysep=0pt,
-    outer sep=0pt,
-    inner xsep=0pt,
-    ]
+    inner sep=0pt, inner ysep=0pt, outer xsep=0pt, outer ysep=0pt, outer sep=0pt, inner xsep=0pt ]
+	
+	%%%%% Settings %%%%%
+	\\newcommand\\fontScale{1.0}
+	\\newcommand\\circleScale{1.0}
+	\\newcommand\\lineWidthScale{1.0}
+	%%%%%%%%%%%%%%%%%%%%
+	
+	% Background (also defines the true size of the image)
 	\\fill[transparent] (0pt,0pt) rectangle (${width}pt,${height}pt);
-	\n`;
+	`;
 	
 	// Tikz content
 	
 	let drawableShapes = active_mySVG.getDrawableShapes();
+	let firstCircle = true;
+	let firstLine = true;
+	let firstText = true;
 	for (const shape of drawableShapes) {
 		switch (shape.type) {
 			case "circle":
-				fileContent += `    \\fill[black] (${shape.pos.x}pt,${shape.pos.y}pt) circle [radius=${shape.r}pt];\n`;
+				if (firstCircle) {
+					fileContent += `    \n    % Circles\n`;
+					firstCircle = false;
+				}
+				fileContent += `    \\fill[black] (${shape.pos.x}pt,${shape.pos.y}pt) circle [radius=${shape.r}pt*\\circleScale];\n`;
 				break;
 			case "line":
-				fileContent += `    \\draw[line width=1.5] (${shape.pos1.x}pt,${shape.pos1.y}pt) -- (${shape.pos2.x}pt,${shape.pos2.y}pt);\n`;
+				if (firstLine) {
+					fileContent += `    \n    % Lines\n`;
+					firstLine = false;
+				}
+				fileContent += `    \\draw[line width=1.5*\\lineWidthScale] (${shape.pos1.x}pt,${shape.pos1.y}pt) -- (${shape.pos2.x}pt,${shape.pos2.y}pt);\n`;
 				break;
 			case "curve":
-				fileContent += `    \\draw[line width=1.5] (${shape.pos1.x}pt,${shape.pos1.y}pt) .. controls (${shape.posC1.x}pt,${shape.posC1.y}pt) and (${shape.posC2.x}pt,${shape.posC2.y}pt) .. (${shape.pos2.x}pt,${shape.pos2.y}pt);\n`;
+				if (firstLine) {
+					fileContent += `    \n    % Lines\n`;
+					firstLine = false;
+				}
+				fileContent += `    \\draw[line width=1.5*\\lineWidthScale] (${shape.pos1.x}pt,${shape.pos1.y}pt) .. controls (${shape.posC1.x}pt,${shape.posC1.y}pt) and (${shape.posC2.x}pt,${shape.posC2.y}pt) .. (${shape.pos2.x}pt,${shape.pos2.y}pt);\n`;
 				break;
 			case "text":
-				fileContent += `    \\node[anchor=south west] at (${shape.pos.x}pt,${shape.pos.y}pt) {${shape.content}};\n`;
+				if (firstText) {
+					fileContent += `    \n    % Text\n`;
+					firstText = false;
+				}
+				fileContent += `    \\node[anchor=south west,scale=\\fontScale] at (${shape.pos.x}pt,${shape.pos.y}pt) {${shape.content}};\n`;
 				break;
 			default:
 				console.error("Can't draw this:", shape);
@@ -247,7 +268,10 @@ $(function() {
 					// Change to main tool
 					let $toolButtons = $('input[type=radio][name=tool]');
 					$toolButtons.val([Tool.Main]);
-					$toolButtons[0].dispatchEvent(new Event('change')); // manually trigger the change event (as if it were user input)
+					
+					// manually trigger the change event (as if it were user input)
+					// $toolButtons[0].dispatchEvent(new Event('change'));
+					checkRadio($('label[for=mainTool]')[0]);
 				}
 				break;
 			case "Enter":
@@ -279,6 +303,12 @@ function checkRadio(label) {
 			activeSVG.classList.remove(tool);
 		}
 		activeSVG.classList.add(input.value);
+	}
+}
+
+function clearDiagram() {
+	if (confirm("Are you sure you want to delete this diagram?\nThis cannot be undone.")) {
+		active_mySVG.eraseAll();
 	}
 }
 
@@ -784,7 +814,13 @@ class mySVG {
 		
 		this.svg = this.$svg[0];
 		
-		this.svg.setAttribute("viewBox", "0 0 " + (width || 100).toString() + ' ' + (height || 100).toString()); // can't use .attr for uppercase letters
+		width = (width || 250);
+		height = (height || 150);
+		
+		this.svg.setAttribute("viewBox", "0 0 " + width.toString() + ' ' + height.toString()); // can't use .attr for uppercase letters
+		
+		$('#svgWidth').val(width);
+		$('#svgHeight').val(height);
 		
 		// select this svg
 		if (activeSVG) {
@@ -1122,7 +1158,7 @@ class mySVG {
 					this.startCurveEdit(this.targetId);
 					
 				} else if (movableTypes.includes(this.targetElement.type)) {
-					if (this.selected.length <= 1 || !this.selected.includes(this.targetId)) {
+					if ((this.selected.length <= 1) || !this.selected.includes(this.targetId)) {
 						this.unselectAll();
 						this.selectElement(this.targetId);
 						if (infinitelyClosePointTypes.includes(this.targetElement.type)) {
@@ -1267,6 +1303,21 @@ class mySVG {
 	
 	eraserDrag = this.erase;
 	
+	erase(evt) {
+		if ((this.mouseButtons & MouseButton.Left) && this.targetElement) {
+			if (deletablePointTypes.includes(this.targetElement.type)) {
+				// evt.target.classList.contains('draggable')
+				this.erasePointAndDescendants(this.targetElement);
+			}  else if (this.targetElement.type == ObjectTypes.Label) {
+				this.eraseLabel(this.targetElement);
+			} else {
+				this.unselectAll();
+			}
+		} else {
+			this.unselectAll();
+		}
+	}
+	
 	eraserEndDrag(evt) { this.unselectAll(); }
 	
 	eraserMouseOver(evt) { this.highlightDescendants(this.targetElement); }
@@ -1277,7 +1328,7 @@ class mySVG {
 	
 	freeClick(evt) {
 		if (this.mouseButtons & MouseButton.Left) {
-			if (this.targetId == 'background' && this.selected.length == 1) {
+			if ((this.targetId == 'background') && (this.selected.length == 1)) {
 				let pt = this.createFreePoint(this.selected[0], this.mousePos);
 				this.unselectAll();
 				this.selectElement(pt.id);
@@ -1735,19 +1786,6 @@ class mySVG {
 	
 	// -- erase
 	
-	erase(evt) {
-		if (this.mouseButtons & MouseButton.Left) {
-			if (this.targetElement && deletablePointTypes.includes(this.targetElement.type)) {
-				// evt.target.classList.contains('draggable')
-				this.erasePointAndDescendants(this.targetElement);
-			}  else if (this.targetElement.type == ObjectTypes.Label) {
-				this.eraseLabel(this.targetElement);
-			} else {
-				this.unselectAll();
-			}
-		}
-	}
-	
 	eraseLabel(element) {
 		this.descendants = [];
 		this.unselectAll();
@@ -1793,6 +1831,24 @@ class mySVG {
 			this.points = this.points.filter(elt => elt !== descendant.id);
 			delete this.elements[line.id];
 			delete this.elements[descendant.id];
+		}
+	}
+	
+	eraseAll() {
+		let firstPoints = {...this.elements[this.basePoint].children}; // deep copy array
+		for (const index in firstPoints) {
+			const element = this.elements[firstPoints[index]];
+			if (deletablePointTypes.includes(element.type)) {
+				this.erasePointAndDescendants(element);
+			}
+		}
+		
+		let labelsToDelete = {...this.labels}; // deep copy array
+		for (const index in labelsToDelete) {
+			const element = this.elements[labelsToDelete[index]];
+			// if (element.type == ObjectTypes.Label) {
+			this.eraseLabel(element);
+			// }
 		}
 	}
 	
@@ -2091,8 +2147,6 @@ class mySVG {
 	// -- edit label content
 	
 	startLabelEdit(id, keepLabelValue=true) {
-		console.log("startLabelEdit");
-		
 		this.unselectAll();
 		this.selectElement(id);
 		this.editingLabel = true;
@@ -2100,8 +2154,6 @@ class mySVG {
 		label.element.classList.add("hidden-label");
 		
 		var boundingBox = label.element.getBBox();
-		console.log('XxY', boundingBox.x + 'x' + boundingBox.y);
-		console.log('size', boundingBox.width + 'x' + boundingBox.height);
 		
 		// <foreignObject> to contain <input> (and <span>)
 		let foreigner = document.createElementNS(xmlns, "foreignObject");
@@ -2120,10 +2172,6 @@ class mySVG {
 		let span = document.createElement('span');
 		span.setAttribute("id", "labelHiddenSpan");
 		foreigner.appendChild(span);
-		
-		console.log("HERE");
-		console.log(label);
-		console.log(label.content);
 		
 		// <input>
 		let labelInput = document.createElement('input');
@@ -2148,6 +2196,8 @@ class mySVG {
 		setTimeout(function(){ labelInput.focus(); labelInput.selectionStart = labelInput.selectionEnd = 10000; }, 0);
 		// (this.selected.length == 1 && this.elements[this.selected[0]].type == ObjectTypes.Label)
 		
+		// Auto-scale <input> to width of its text
+		// Source: https://stackoverflow.com/questions/8100770/auto-scaling-inputtype-text-to-width-of-value
 		$('#labelHiddenSpan').text($('#labelInput').val());
 		$('#labelInput').width($('#labelHiddenSpan').width()+2);
 		$('#labelInput').on('input', function() {
@@ -2164,8 +2214,6 @@ class mySVG {
 	}
 	
 	stopLabelEdit() {
-		console.log("stopLabelEdit");
-		console.log(this.selected);
 		if (this.editingLabel) {
 			const element = this.elements[this.selected[0]];
 			element.element.classList.remove("hidden-label");
@@ -2374,36 +2422,38 @@ class mySVG {
 	}
 	
 	createExampleDiagram() {
-		// this.elements[this.basePoint].moveTo(20,80);
-		let pt = this.createFreePoint(this.basePoint, {x: 34, y: 43});
-		pt = this.createFreePoint(pt.id, {x: 60, y: 22});
-		let pt4 = this.createFreePoint(pt.id, {x: 98, y: 13});
-		let pt5 = this.createSatellitePoint(pt4.id, {x: 97, y: 38});
-		pt5 = this.createSatellitePoint(pt5.id, {x: 128, y: 40});
-		pt = this.createFreePoint(pt5.id, {x: 160, y: 15});
-		pt = this.createFreePoint(pt5.id, {x: 173, y: 31});
+		this.elements[this.basePoint].moveTo(33,117);
 		
-		pt = this.createSatellitePoint(pt4.id, {x: 98, y: 65});
-		pt = this.createFreePoint(pt.id, {x: 127, y: 86});
-		pt = this.createSatellitePoint(pt.id, {x: 130, y: 61});
-		pt = this.createSatellitePoint(pt.id, {x: 157, y: 64});
+		let pt  = this.createFreePoint(this.basePoint, {x: 47, y: 67});
+		pt      = this.createFreePoint(pt.id,          {x: 80, y: 33});
+		let pt4 = this.createFreePoint(pt.id,          {x: 127, y: 20});
+		let pt5 = this.createSatellitePoint(pt4.id,    {x: 127, y: 60});
+		pt5     = this.createSatellitePoint(pt5.id,    {x: 166, y: 60});
+		pt      = this.createFreePoint(pt5.id,         {x: 198, y: 37});
+		pt      = this.createFreePoint(pt5.id,         {x: 211, y: 53});
 		
-		this.createLabel({x:2, y:83}, "12");
-		this.createLabel({x:18, y:44}, "12");
-		this.createLabel({x:46, y:19}, "12");
-		this.createLabel({x:102, y:15}, "6");
-		this.createLabel({x:102, y:34}, "4");
-		this.createLabel({x:124, y:30}, "2");
-		this.createLabel({x:165, y:18}, "1");
-		this.createLabel({x:178, y:35}, "1");
-		this.createLabel({x:102, y:70}, "2");
-		this.createLabel({x:132, y:93}, "2");
-		this.createLabel({x:132, y:57}, "1");
-		this.createLabel({x:162, y:70}, "1");
+		pt = this.createSatellitePoint(pt4.id, {x: 120, y: 95});
+		pt = this.createFreePoint(pt.id,       {x: 187, y: 130});
+		pt = this.createSatellitePoint(pt.id,  {x: 187, y: 98});
+		pt = this.createSatellitePoint(pt.id,  {x: 220, y: 98});
 		
-		this.createLabel({x:28, y:85}, "$p_0$");
-		this.createLabel({x:38, y:57}, "$p_1$");
-		this.createLabel({x:60, y:38}, "$p_2$");
+		this.createLabel({x:17, y:111}, "12");
+		this.createLabel({x:30, y:65}, "12");
+		this.createLabel({x:63, y:31}, "12");
+		this.createLabel({x:133, y:21}, "6");
+		this.createLabel({x:132, y:55}, "4");
+		this.createLabel({x:169, y:55}, "2");
+		this.createLabel({x:203, y:34}, "1");
+		this.createLabel({x:216, y:53}, "1");
+		
+		this.createLabel({x:132, y:98}, "2");
+		this.createLabel({x:190, y:125}, "2");
+		this.createLabel({x:190, y:93}, "1");
+		this.createLabel({x:224, y:94}, "1");
+		
+		this.createLabel({x:42, y:121}, "$p_0$");
+		this.createLabel({x:54, y:77}, "$p_1$");
+		this.createLabel({x:83, y:46}, "$p_2$");
 	}
 	
 	hideToolGUI() {

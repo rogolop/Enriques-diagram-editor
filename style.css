@@ -8,6 +8,7 @@ html * {
 
 :root {
 	--text-color: #ffffff;
+	--text-color-darker: #cccccc;
 	--background-color: #36373a;
 	--primary-color: #F1F1F1;
 	/* #1c55a6; */
@@ -15,6 +16,7 @@ html * {
 	/* #e0dad0; */
 	--accent-color: #6dacfe;
 	/* #2d7a2d; */
+	--warning-color: #fe5353;
 	
 	--background-color-darker: var(--secondary-color);
 	/* #212224; */
@@ -96,11 +98,10 @@ main {
 	border-radius: 3px;
 }
 
-#site-span {
+#site-title {
 	vertical-align: middle;
 	overflow: hidden;
 	white-space: nowrap;
-	text-decoration: none !important;
 	font-size: 22px;
 	color: var(--text-color);
 	display: inline-block;
@@ -110,10 +111,15 @@ main {
 
 #github-link {
 	color: var(--text-color);
-	text-decoration: none !important;
+	text-decoration: none;
 	max-height: 50px;
 	margin-left: 10px;
 	overflow: hidden;
+}
+
+#github-link span:hover {
+	/* color: var(--text-color-darker); */
+	text-decoration: underline;
 }
 
 
@@ -154,19 +160,53 @@ main {
 	/* height: 50px; */
 /* } */
 
-#downloadButton,
-#downloadTikZ {
-	background: var(--accent-color);
-	color: var(--text-color-inverted);
-	border: 3px solid var(--accent-color);
+button {
+	background: var(--secondary-color);
+	height: 40px;
+	min-width: 40px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: space-evenly;
+	vertical-align: top;
+	cursor: pointer;
+	/* border: 2px solid lightgrey; */
+	border: 3px solid var(--secondary-color);
+	/* background: var(--primary-color); */
 	border-radius: 6px;
+	/* transition: all 0.3s ease; */
+	box-sizing: border-box;
+	font-size: 20px;
+	color: var(--text-color);
+	/* var(--text-color-inverted); */
+	margin: 0 2px;
+	
 	/* margin: 0 15px 0 0; */
 	gap: 0;
 	padding: 0 10px;
 }
 
-#downloadButton {
+button:hover {
+	border-color: var(--primary-color);
+	background: var(--primary-color);
+	/* transition: all 0s ease; */
+}
+
+button > img {
+	height: 25px;
+}
+
+#downloadButton,
+#downloadTikZ {
+	background: var(--accent-color);
+	border-color: var(--accent-color);
+	color: var(--text-color-inverted);
 	margin-right: 5px;
+}
+
+#downloadButton:hover,
+#downloadTikZ:hover {
+	background: var(--primary-color);
+	border-color: var(--primary-color);
 }
 
 #downloadButton:hover {
@@ -174,10 +214,24 @@ main {
 	background: var(--primary-color);
 	border-color: var(--primary-color);
 }
-	
-#downloadButton:active {
-	border-color: var(--primary-color);
+
+button:active {
+	/* border-radius: 20px; */
+	box-shadow: 
+        /* inset 5px 5px 10px 0 #4242429F, */
+        inset 0 0 100px 0 #4242424F;
 }
+
+#clearButton {
+	color: var(--warning-color);
+}
+
+#clearButton:hover {
+	background-color: var(--warning-color);
+	border-color: var(--warning-color);
+	color: var(--secondary-color);
+}
+
 /* 
 .toolbar button {
 	background: var(--accent-color);
@@ -185,9 +239,10 @@ main {
 	border: 3px solid var(--accent-color);
 } */
 
-.vl {
+.vSeparator {
 	display: inline-flex;
 	border-left: 3px solid var(--background-color-darker);
+	border-radius: 3px;
 	vertical-align: top;
 	height: 40px;
 	margin: 0 10px;
@@ -251,6 +306,7 @@ input[type=number] {
 	border-width: 0;
 	font-size: 15px;
 	display: block;
+	padding-right: 0;
 }
 
 td {
