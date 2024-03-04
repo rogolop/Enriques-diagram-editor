@@ -4,7 +4,7 @@
 ## Features
 - Create and edit an Enriques diagram using the graphical interface.
 - Download the Enriques diagram as a TikZ or SVG file.
-- Available online [here](https://rogolop.github.io/Enriques-diagram-editor/).
+- Available online here: [https://rogolop.github.io/Enriques-diagram-editor/](https://rogolop.github.io/Enriques-diagram-editor/).
 
 ## Tips
 ### How to include the downloaded TikZ file in LaTeX
@@ -18,8 +18,10 @@ Example:
 
 \begin{figure}[htbp]
     \centering
-    \resizebox{0.5\linewidth}{!}{\input{diagram.tikz}} % image here
-    \caption{An Enriques diagram.}
+    \resizebox{0.5\linewidth}{!}{
+        \input{diagram.tikz} % image here
+    }
+    \caption{An Enriques diagram from a TikZ file.}
 \end{figure}
 
 \end{document}
@@ -36,7 +38,9 @@ Example:
 
 \begin{figure}[htbp]
     \centering
-    \includesvg[width=0.5\linewidth]{diagram.svg} % image here
+    \resizebox{0.5\linewidth}{!}{
+        \includesvg{diagram.svg} % image here
+    }
     \caption{An Enriques diagram from an SVG file.}
 \end{figure}
 
